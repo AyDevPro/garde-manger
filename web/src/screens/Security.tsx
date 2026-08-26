@@ -2,13 +2,14 @@ import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BackHeader, Button, Card, Eyebrow, Screen, Title } from '../components/ui';
 import { ConfirmSheet } from './sheets';
-import { useResource } from '../hooks';
+import { useGoBack, useResource } from '../hooks';
 import { ApiError, api } from '../lib/api';
 import { useStore } from '../store';
 import type { DeviceSession } from '../types';
 
 export function Security() {
   const nav = useNavigate();
+  const goBack = useGoBack('/reglages');
   const { signOut, run, touch, showToast } = useStore();
   const { data: sessions } = useResource<DeviceSession[]>('/auth/sessions');
   const [current, setCurrent] = useState('');
@@ -37,7 +38,7 @@ export function Security() {
 
   return (
     <Screen>
-      <BackHeader onBack={() => nav('/reglages')}>Réglages</BackHeader>
+      <BackHeader onBack={goBack}>Retour</BackHeader>
       <div style={{ marginTop: 16 }}><Title>Sécurité</Title></div>
 
       <form onSubmit={changePassword}>

@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Button, Card, Eyebrow, Row, Screen, Spinner, Thumb } from '../components/ui';
 import { StockRow } from '../components/StockRow';
 import { ConfirmSheet, LocationSheet, ZeroSheet } from './sheets';
-import { useResource, useStockActions } from '../hooks';
+import { useGoBack, useResource, useStockActions } from '../hooks';
 import { api } from '../lib/api';
 import {
   DATE_TYPE_LABEL, HERO, MOVEMENT_LABEL, frDate, qtyLabel, urgencyBadge,
@@ -16,6 +16,7 @@ type Detail = { item: StockItem; otherBatches: StockItem[]; history: Movement[] 
 export function ProductDetail() {
   const { id } = useParams<{ id: string }>();
   const nav = useNavigate();
+  const goBack = useGoBack('/stock');
   const { setDraft, run, touch, showToast } = useStore();
   const [zero, setZero] = useState<StockItem | null>(null);
   const [sheet, setSheet] = useState<'delete' | 'move' | 'trash' | null>(null);
@@ -54,7 +55,7 @@ export function ProductDetail() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8 }}>
           <button
             type="button"
-            onClick={() => nav(-1)}
+            onClick={goBack}
             aria-label="Retour"
             style={{
               width: 40, height: 40, borderRadius: '50%', background: 'rgba(0,0,0,.28)', border: 'none',

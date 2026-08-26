@@ -48,7 +48,7 @@ export function Home() {
             </span>
           </IconButton>
           <IconButton label="Réglages" onClick={() => nav('/reglages')}>
-            {[0, 1, 2].map((i) => <span key={i} style={{ width: 4, height: 4, borderRadius: '50%', background: '#fff' }} />)}
+            <GearIcon />
           </IconButton>
         </div>
       </header>
@@ -139,6 +139,28 @@ export function Home() {
 
       <ZeroSheet item={zero} onClose={() => setZero(null)} />
     </Screen>
+  );
+}
+
+/** Un engrenage : huit dents autour d'un moyeu, au trait des autres icônes. */
+function GearIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="19"
+      height="19"
+      fill="none"
+      stroke="#fff"
+      strokeWidth="2"
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
+      {[0, 45, 90, 135, 180, 225, 270, 315].map((angle) => (
+        <line key={angle} x1="12" y1="3.4" x2="12" y2="5.8" transform={`rotate(${angle} 12 12)`} />
+      ))}
+      <circle cx="12" cy="12" r="6.2" />
+      <circle cx="12" cy="12" r="2.4" />
+    </svg>
   );
 }
 

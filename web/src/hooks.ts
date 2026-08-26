@@ -1,7 +1,22 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from './lib/api';
 import { useStore } from './store';
 import type { StockItem } from './types';
+
+/**
+ * Retour à l'écran d'où l'on vient, pas à un parent supposé : l'historique est
+ * atteignable depuis l'accueil comme depuis les réglages. `fallback` ne sert
+ * qu'à l'ouverture directe d'une URL, quand il n'y a rien derrière.
+ */
+export function useGoBack(fallback: string) {
+  const nav = useNavigate();
+  return useCallback(() => {
+    const idx = (window.history.state as { idx?: number } | null)?.idx;
+    if (typeof idx === 'number' && idx > 0) nav(-1);
+    else nav(fallback, { replace: true });
+  }, [nav, fallback]);
+}
 
 /** Charge une ressource et la recharge à chaque écriture (revision). */
 export function useResource<T>(path: string | null, deps: unknown[] = []) {

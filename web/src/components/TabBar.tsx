@@ -4,7 +4,9 @@ const TABS = [
   { to: '/', label: 'Accueil', match: (p: string) => p === '/' },
   { to: '/stock', label: 'Stock', match: (p: string) => p.startsWith('/stock') || p.startsWith('/produit') },
   { to: '/dates', label: 'Dates', match: (p: string) => p.startsWith('/dates') },
-  { to: '/reglages', label: 'Réglages', match: (p: string) => p.startsWith('/reglages') || p.startsWith('/securite') || p.startsWith('/gerer') || p.startsWith('/courses') || p.startsWith('/historique') },
+  // Les réglages sont passés en haut, sur l'engrenage de l'accueil : la place
+  // du bas revient à la liste de courses, qu'on ouvre en plein magasin.
+  { to: '/courses', label: 'Courses', match: (p: string) => p.startsWith('/courses') },
 ];
 
 /** Barre d'onglets flottante + le gros bouton Scanner : l'action la plus fréquente. */
@@ -92,14 +94,15 @@ function TabIcon({ name }: { name: string }) {
       </span>
     );
   }
+  // Courses : une liste à puces.
   return (
-    <span
-      style={{
-        width: 17, height: 17, border: '2px solid currentColor', borderRadius: '50%',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}
-    >
-      <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor' }} />
+    <span style={{ width: 18, height: 16, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+      {[13, 10, 7].map((w) => (
+        <span key={w} style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+          <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'currentColor', flex: 'none' }} />
+          <span style={{ width: w - 4, height: 2, borderRadius: 1, background: 'currentColor' }} />
+        </span>
+      ))}
     </span>
   );
 }

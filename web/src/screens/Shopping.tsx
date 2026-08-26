@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { BackHeader, Button, Card, Screen, Title } from '../components/ui';
+import { Button, Card, Screen, Title } from '../components/ui';
 import { useResource } from '../hooks';
 import { api } from '../lib/api';
 import { useStore } from '../store';
@@ -9,7 +8,6 @@ type Item = { id: string; label: string; qty: number; productId: string | null; 
 
 /** Ce qui est tombé à zéro atterrit ici, et tout ajout manuel aussi. */
 export function Shopping() {
-  const nav = useNavigate();
   const { run, touch } = useStore();
   const { data } = useResource<Item[]>('/shopping');
   const [label, setLabel] = useState('');
@@ -37,10 +35,7 @@ export function Shopping() {
 
   return (
     <Screen>
-      <BackHeader onBack={() => nav('/reglages')}>Réglages</BackHeader>
-      <div style={{ marginTop: 16 }}>
-        <Title sub="Un produit épuisé peut être envoyé ici depuis le stock.">Liste de courses</Title>
-      </div>
+      <Title sub="Un produit épuisé peut être envoyé ici depuis le stock.">Liste de courses</Title>
 
       <div style={{ display: 'flex', gap: 9, marginTop: 18 }}>
         <input

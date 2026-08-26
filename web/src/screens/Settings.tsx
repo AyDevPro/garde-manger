@@ -12,7 +12,6 @@ export function Settings() {
       rows: [
         { k: 'Emplacements', v: String(locations.length), go: () => nav('/gerer/emplacements') },
         { k: 'Catégories', v: String(categories.length), go: () => nav('/gerer/categories') },
-        { k: 'Liste de courses', v: '', go: () => nav('/courses') },
       ],
     },
     {
