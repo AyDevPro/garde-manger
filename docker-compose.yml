@@ -1,6 +1,20 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# garde-manger — déploiement PRODUCTION (VPS aydev)
+#
+# Différences avec la branche `dev` :
+#   • Pas de reverse-proxy Caddy : le TLS est géré par le Traefik existant du VPS
+#     (ports 80/443 déjà occupés). L'app est exposée à Traefik via des labels et
+#     le réseau externe `aydev_aydev-net`.
+#   • Durcissement sécurité (mem_limit, cap_drop, tmpfs noexec, no-new-privileges)
+#     aligné sur le service presencejct — cf. incident cryptominer de mai 2026.
+#
+# Déploiement :  docker compose up -d --build
+# Domaine     :  https://garde-manger.aydev.app (DNS déjà pointé sur le VPS)
+# ─────────────────────────────────────────────────────────────────────────────
 services:
   db:
     image: postgres:16-alpine
+    container_name: garde-manger-db
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -15,9 +29,19 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
+    networks:
+      - aydev-net
 
   app:
     build: .
+    container_name: garde-manger-app
     restart: unless-stopped
     depends_on:
       db:
@@ -28,6 +52,7 @@ services:
       HOUSEHOLD_PASSWORD: ${HOUSEHOLD_PASSWORD}
       COOKIE_SECURE: ${COOKIE_SECURE:-true}
       SESSION_DAYS: ${SESSION_DAYS:-180}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
       TZ: ${TZ:-Europe/Paris}
       PORT: 3000
     volumes:
@@ -40,27 +65,35 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.garde-manger.rule=Host(`garde-manger.aydev.app`)"
+      - "traefik.http.routers.garde-manger.entrypoints=websecure"
+      - "traefik.http.routers.garde-manger.tls.certresolver=letsencrypt"
+      - "traefik.http.services.garde-manger.loadbalancer.server.port=3000"
+    # ── Durcissement (borne le rayon d'action d'une éventuelle compromission) ──
+    mem_limit: 1000m
+    mem_reservation: 256m
+    cpus: 1.0
+    pids_limit: 256
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
+    networks:
+      - aydev-net
 
-  # Reverse-proxy TLS : certificat Let's Encrypt automatique si DOMAIN est un
-  # vrai domaine, certificat interne sinon (utile en réseau local).
-  proxy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    depends_on: [app]
-    environment:
-      DOMAIN: ${DOMAIN:-localhost}
-      ACME_EMAIL: ${ACME_EMAIL:-}
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy-data:/data
-      - caddy-config:/config
-
-  # Sauvegarde quotidienne de PostgreSQL (14 jours de rétention).
+  # Sauvegarde quotidienne de PostgreSQL (BACKUP_KEEP_DAYS jours de rétention).
   backup:
     image: postgres:16-alpine
+    container_name: garde-manger-backup
     restart: unless-stopped
     depends_on:
       db:
@@ -77,9 +110,22 @@ services:
       - app-data:/data:ro
       - ./scripts/backup.sh:/usr/local/bin/backup.sh:ro
     entrypoint: ["/bin/sh", "/usr/local/bin/backup.sh"]
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
+    networks:
+      - aydev-net
 
 volumes:
   db-data:
   app-data:
-  caddy-data:
-  caddy-config:
+
+# Réseau partagé avec Traefik (défini par le compose racine /root/aydev).
+networks:
+  aydev-net:
+    external: true
+    name: aydev_aydev-net
