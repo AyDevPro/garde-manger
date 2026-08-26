@@ -308,7 +308,7 @@ export function AddProduct() {
       <Card style={{ marginTop: 20, borderRadius: 20 }}>
         <Row label="Quantité" last={false}>
           <span style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--card-2)', borderRadius: 12, padding: 4 }}>
-            <StepButton onClick={() => set('qty', Math.max(0, Number((draft.qty - 1).toFixed(2))))}>−</StepButton>
+            <StepButton onClick={() => set('qty', Math.max(1, Number((draft.qty - 1).toFixed(2))))}>−</StepButton>
             <span className="mono" style={{ minWidth: 44, textAlign: 'center', font: '700 18px/1 var(--mono)' }}>{draft.qty}</span>
             <StepButton accent onClick={() => set('qty', Number((draft.qty + 1).toFixed(2)))}>+</StepButton>
           </span>
