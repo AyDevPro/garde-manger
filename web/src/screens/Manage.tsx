@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { BackHeader, Button, Card, Screen, Title } from '../components/ui';
 import { ConfirmSheet } from './sheets';
 import { api } from '../lib/api';
+import { useGoBack } from '../hooks';
 import { useDragReorder } from '../lib/useDragReorder';
 import { useStore } from '../store';
 import type { Category, Location } from '../types';
@@ -14,6 +15,7 @@ export function Manage() {
   const { kind } = useParams<{ kind: string }>();
   const isCat = kind === 'categories';
   const nav = useNavigate();
+  const goBack = useGoBack('/reglages');
   const { locations, categories, refreshTaxonomy, run, touch, showToast } = useStore();
   const [editing, setEditing] = useState<string | null>(null);
   const [name, setName] = useState('');
@@ -52,7 +54,7 @@ export function Manage() {
 
   return (
     <Screen>
-      <BackHeader onBack={() => nav('/reglages')}>Réglages</BackHeader>
+      <BackHeader onBack={goBack}>Retour</BackHeader>
       <div style={{ marginTop: 16 }}>
         <Title sub={isCat
           ? 'Regroupez les produits pour filtrer le stock plus vite.'

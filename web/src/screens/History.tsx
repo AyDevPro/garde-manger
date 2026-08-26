@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { BackHeader, Card, Screen, Spinner, Title } from '../components/ui';
-import { useResource } from '../hooks';
+import { useGoBack, useResource } from '../hooks';
 import { MOVEMENT_LABEL } from '../lib/format';
 import type { Movement } from '../types';
 
@@ -12,13 +12,14 @@ const TONE: Record<string, string> = {
 
 export function History() {
   const nav = useNavigate();
+  const goBack = useGoBack('/');
   const { data, loading } = useResource<Movement[]>('/movements?limit=120');
 
   const days = groupByDay(data ?? []);
 
   return (
     <Screen>
-      <BackHeader onBack={() => nav('/reglages')}>Réglages</BackHeader>
+      <BackHeader onBack={goBack}>Retour</BackHeader>
       <div style={{ marginTop: 16 }}>
         <Title sub="Ajouté, consommé, jeté, déplacé, ouvert, congelé.">Historique</Title>
       </div>
