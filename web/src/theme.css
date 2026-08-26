@@ -1,0 +1,72 @@
+:root {
+  /* Surfaces */
+  --bg: #000;
+  --card: #1c1c1e;
+  --card-hi: #232325;
+  --card-2: #2c2c2e;
+  --line: rgba(255, 255, 255, .06);
+  --line-2: rgba(255, 255, 255, .1);
+
+  /* Texte */
+  --fg: #fff;
+  --fg-2: rgba(235, 235, 245, .6);
+  --fg-3: rgba(235, 235, 245, .45);
+  --fg-4: rgba(235, 235, 245, .3);
+
+  /* Accent et code couleur d'urgence */
+  --accent: #f5a623;
+  --accent-hi: #ffb53d;
+  --on-accent: #141005;
+  --red: #ff453a;
+  --orange: #ff9f0a;
+  --yellow: #ffd60a;
+  --green: #30d158;
+  --blue: #0a84ff;
+  --purple: #bf5af2;
+
+  --sans: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Encoche et barre d'accueil iOS */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.4;
+  overscroll-behavior-y: none;
+  /* Ne jamais grossir le texte quand l'iPhone bascule en paysage. */
+  -webkit-text-size-adjust: 100%;
+}
+
+input, button, textarea, select { font: inherit; color: inherit; }
+input, textarea { outline: none; }
+input::placeholder, textarea::placeholder { color: rgba(235, 235, 245, .3); }
+button { cursor: pointer; }
+a { color: var(--accent); text-decoration: none; }
+
+/* Les listes défilent sans barre visible, comme sur iOS. */
+.scroll { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.scroll::-webkit-scrollbar, .hscroll::-webkit-scrollbar { width: 0; height: 0; }
+.hscroll { overflow-x: auto; scrollbar-width: none; }
+
+.mono { font-family: var(--mono); }
+.ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+@keyframes sweep { 0% { transform: translateY(-46px) } 50% { transform: translateY(46px) } 100% { transform: translateY(-46px) } }
+@keyframes pulse { 0%, 100% { opacity: .35 } 50% { opacity: 1 } }
+@keyframes rise  { from { transform: translateY(16px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
+@keyframes spin  { to { transform: rotate(360deg) } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}

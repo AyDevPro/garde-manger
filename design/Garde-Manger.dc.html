@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"><style>
+body{margin:0;background:#0B0B0C}
+*{box-sizing:border-box}
+a{color:#F5A623;text-decoration:none}
+a:hover{color:#FFC15E}
+input,button,textarea{font-family:inherit}
+input{outline:none}
+input::placeholder{color:rgba(235,235,245,.3)}
+@keyframes sweep{0%{transform:translateY(-46px)}50%{transform:translateY(46px)}100%{transform:translateY(-46px)}}
+@keyframes pulse{0%,100%{opacity:.35}50%{opacity:1}}
+@keyframes rise{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+.gm-scroll::-webkit-scrollbar{width:0}
+</style></helmet>
+<div style="min-height:100vh;display:flex;gap:44px;justify-content:center;align-items:flex-start;padding:44px 40px 90px;font-family:-apple-system,'Helvetica Neue',Helvetica,system-ui,sans-serif;color:#fff">
+
+<sc-if value="{{ showIndex }}" hint-placeholder-val="{{ true }}">
+<div style="width:200px;flex:none;padding-top:6px">
+<div style="font-size:24px;line-height:1.15;font-weight:700;letter-spacing:-.02em">Garde‑Manger</div>
+<div style="font:500 10px/1.4 'JetBrains Mono',monospace;letter-spacing:.09em;text-transform:uppercase;color:rgba(235,235,245,.4);margin:9px 0 14px">iOS · sombre · FR</div>
+<div style="display:flex;flex-direction:column;gap:2px">
+<sc-for list="{{ indexItems }}" as="item" hint-placeholder-count="12">
+<button onClick="{{ item.onClick }}" style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:baseline;gap:9px;padding:7px 10px;border-radius:9px;font-size:12.5px;line-height:1.25;color:{{ item.color }};background:{{ item.bg }}" style-hover="background:rgba(255,255,255,.07)">
+<span style="font:500 9.5px 'JetBrains Mono',monospace;color:rgba(235,235,245,.3);min-width:16px">{{ item.num }}</span>
+<span>{{ item.label }}</span>
+</button>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<div style="width:402px;height:874px;flex:none;position:relative;overflow:hidden;background:#000;border:1px solid rgba(255,255,255,.1);display:flex;flex-direction:column">
+
+<!-- barre d'état -->
+<div style="position:absolute;top:0;left:0;right:0;height:52px;z-index:75;display:flex;align-items:center;justify-content:space-between;padding:0 26px;pointer-events:none">
+<div style="font:700 15px/1 -apple-system,'Helvetica Neue';letter-spacing:.01em">10:20</div>
+<div style="display:flex;align-items:center;gap:6px">
+<div style="display:flex;align-items:flex-end;gap:2px"><div style="width:3px;height:5px;border-radius:1px;background:#fff"></div><div style="width:3px;height:7px;border-radius:1px;background:#fff"></div><div style="width:3px;height:9px;border-radius:1px;background:#fff"></div><div style="width:3px;height:11px;border-radius:1px;background:rgba(255,255,255,.4)"></div></div>
+<div style="width:14px;height:11px;border-radius:2px;background:rgba(255,255,255,.85)"></div>
+<div style="width:24px;height:12px;border-radius:3px;border:1px solid rgba(255,255,255,.45);padding:1.5px"><div style="width:70%;height:100%;border-radius:1.5px;background:#fff"></div></div>
+</div>
+</div>
+
+<sc-if value="{{ netError }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;top:58px;left:14px;right:14px;z-index:80;display:flex;align-items:center;gap:11px;padding:12px 15px;border-radius:17px;background:rgba(255,69,58,.16);border:1px solid rgba(255,69,58,.4);backdrop-filter:blur(14px);animation:rise .25s ease">
+<div style="width:8px;height:8px;border-radius:50%;background:#FF453A;flex:none;animation:pulse 1.4s infinite"></div>
+<div style="flex:1;font-size:13px;line-height:1.35;color:#fff">Hors ligne — les ajouts seront synchronisés plus tard.</div>
+<button onClick="{{ clearError }}" style="all:unset;box-sizing:border-box;cursor:pointer;font:600 12.5px/1;color:#FF453A;padding:6px 8px">OK</button>
+</div>
+</sc-if>
+
+<!-- ══ 1 · CONNEXION ══ -->
+<sc-if value="{{ isLogin }}" hint-placeholder-val="{{ false }}">
+<div style="height:100%;display:flex;flex-direction:column;justify-content:center;padding:0 26px 50px">
+<div style="width:60px;height:60px;border-radius:18px;background:#F5A623;display:flex;align-items:center;justify-content:center;margin-bottom:26px">
+<div style="width:24px;height:24px;border:3px solid #111;border-radius:6px"></div>
+</div>
+<div style="font-size:36px;line-height:1.06;font-weight:700;letter-spacing:-.03em">Garde‑Manger</div>
+<div style="font-size:15px;line-height:1.5;color:rgba(235,235,245,.6);margin:12px 0 32px;max-width:260px;text-wrap:pretty">Le stock de la maison, les dates de péremption, et rien de plus.</div>
+<div style="background:#1C1C1E;border-radius:18px;overflow:hidden">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 17px;border-bottom:1px solid rgba(255,255,255,.07)">
+<div style="font-size:16px;color:rgba(235,235,245,.6)">Maison</div>
+<input value="Durand" readonly="" style="all:unset;flex:1;text-align:right;font-size:16px;color:#fff"/>
+</div>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 17px">
+<div style="font-size:16px;color:rgba(235,235,245,.6)">Mot de passe</div>
+<input type="password" value="motdepasse" readonly="" style="all:unset;flex:1;text-align:right;font-size:16px;letter-spacing:.2em;color:#fff"/>
+</div>
+</div>
+<button onClick="{{ signIn }}" style="all:unset;box-sizing:border-box;cursor:pointer;margin-top:16px;text-align:center;padding:17px;border-radius:16px;background:#F5A623;color:#141005;font:600 17px/1" style-hover="background:#FFB53D">Se connecter</button>
+<div style="text-align:center;margin-top:16px;font-size:13px;color:rgba(235,235,245,.35)">Accès réservé au foyer · pas d’inscription</div>
+</div>
+</sc-if>
+
+<!-- ══ 2 · ACCUEIL ══ -->
+<sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+<div class="gm-scroll" style="height:100%;overflow-y:auto;padding:62px 0 132px">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:0 20px">
+<div>
+<div style="font:500 11px/1 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:rgba(235,235,245,.4)">{{ todayLabel }}</div>
+<div style="font-size:30px;line-height:1.1;font-weight:700;letter-spacing:-.02em;margin-top:7px">Inventaire</div>
+</div>
+<div style="display:flex;gap:9px">
+<button onClick="{{ goSettings }}" style="all:unset;box-sizing:border-box;cursor:pointer;width:40px;height:40px;border-radius:50%;background:#1C1C1E;display:flex;align-items:center;justify-content:center;gap:3px"><div style="width:4px;height:4px;border-radius:50%;background:#fff"></div><div style="width:4px;height:4px;border-radius:50%;background:#fff"></div><div style="width:4px;height:4px;border-radius:50%;background:#fff"></div></button>
+<button onClick="{{ goSecurity }}" style="all:unset;box-sizing:border-box;cursor:pointer;width:40px;height:40px;border-radius:50%;background:#1C1C1E;display:flex;align-items:center;justify-content:center"><div style="width:15px;height:15px;border-radius:50%;border:2px solid #fff"></div></button>
+</div>
+</div>
+
+<sc-if value="{{ demoBanner }}" hint-placeholder-val="{{ false }}">
+<div style="margin:16px 20px 0;padding:10px 13px;border-radius:12px;background:rgba(245,166,35,.12);border:1px dashed rgba(245,166,35,.4);font:500 11.5px/1.35 'JetBrains Mono',monospace;color:#F5A623">Mode démonstration — données fictives</div>
+</sc-if>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;padding:18px 20px 0">
+<sc-for list="{{ statTiles }}" as="item" hint-placeholder-count="4">
+<button onClick="{{ item.onClick }}" style="all:unset;box-sizing:border-box;cursor:pointer;padding:15px 16px 14px;border-radius:22px;background:{{ item.bg }};border:1px solid {{ item.border }}" style-hover="filter:brightness(1.25)">
+<div style="display:flex;align-items:center;justify-content:space-between">
+<div style="width:30px;height:30px;border-radius:50%;background:{{ item.fg }};display:flex;align-items:center;justify-content:center"><div style="width:12px;height:12px;border-radius:{{ item.shape }};background:#0B0B0C"></div></div>
+<div style="font:700 26px/1 'JetBrains Mono',monospace;color:{{ item.fg }}">{{ item.count }}</div>
+</div>
+<div style="margin-top:14px;font-size:16px;font-weight:600;color:{{ item.fg }};text-align:left">{{ item.label }}</div>
+</button>
+</sc-for>
+</div>
+
+<div style="display:flex;align-items:baseline;justify-content:space-between;padding:28px 20px 11px">
+<div style="font-size:20px;font-weight:700;letter-spacing:-.01em">À consommer vite</div>
+<button onClick="{{ goDates }}" style="all:unset;box-sizing:border-box;cursor:pointer;font:600 13.5px/1;color:#F5A623">Tout voir</button>
+</div>
+
+<sc-if value="{{ hasUrgent }}" hint-placeholder-val="{{ true }}">
+<div style="margin:0 20px;background:#1C1C1E;border-radius:22px;overflow:hidden">
+<sc-for list="{{ urgentList }}" as="item" hint-placeholder-count="4">
+<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.06)">
+<button onClick="{{ item.onOpen }}" style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:12px;flex:1;min-width:0">
+<div style="width:52px;height:52px;border-radius:13px;flex:none;position:relative;overflow:hidden;background:repeating-linear-gradient(135deg,#2C2C2E 0 5px,#242426 5px 10px)">
+<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:500 11px 'JetBrains Mono',monospace;color:rgba(235,235,245,.45)">{{ item.initials }}</div>
+</div>
+<div style="flex:1;min-width:0;text-align:left">
+<div style="font-size:16px;font-weight:600;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ item.name }}</div>
+<div style="font-size:13px;line-height:1.35;color:rgba(235,235,245,.5);margin-top:3px">{{ item.qtyLabel }} · {{ item.loc }}</div>
+<sc-if value="{{ item.isGauge }}" hint-placeholder-val="{{ false }}">
+<div style="height:4px;border-radius:2px;background:rgba(255,255,255,.1);margin-top:8px;overflow:hidden;max-width:150px">
+<div style="height:100%;border-radius:2px;width:{{ item.gauge }};background:{{ item.color }}"></div>
+</div>
+</sc-if>
+</div>
+</button>
+<div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex:none">
+<div style="padding:6px 11px;border-radius:999px;font:600 12.5px/1;background:{{ item.tint }};color:{{ item.color }};white-space:nowrap">{{ item.urgLabel }}</div>
+<button onClick="{{ item.onConsume }}" style="all:unset;box-sizing:border-box;cursor:pointer;padding:7px 13px;border-radius:999px;background:rgba(255,255,255,.1);color:#fff;font:600 12.5px/1" style-hover="background:rgba(245,166,35,.22);color:#F5A623">−1 consommé</button>
+</div>
+</div>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{ noUrgent }}" hint-placeholder-val="{{ false }}">
+<div style="margin:0 20px;padding:36px 22px;text-align:center;background:#1C1C1E;border-radius:22px">
+<div style="width:36px;height:36px;margin:0 auto 14px;border-radius:50%;border:2px solid #30D158"></div>
+<div style="font-size:17px;font-weight:600">Rien ne presse</div>
+<div style="font-size:13.5px;line-height:1.45;color:rgba(235,235,245,.5);margin-top:6px">Aucun produit n’expire dans les 7 prochains jours.</div>
+</div>
+</sc-if>
+
+<div style="padding:28px 20px 11px;font-size:20px;font-weight:700;letter-spacing:-.01em">Emplacement</div>
+<div style="margin:0 20px;background:#1C1C1E;border-radius:22px;overflow:hidden">
+<sc-for list="{{ locRows }}" as="item" hint-placeholder-count="6">
+<button onClick="{{ item.onClick }}" style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:13px;width:100%;padding:15px 16px;border-bottom:1px solid rgba(255,255,255,.06)" style-hover="background:#232325">
+<div style="width:10px;height:10px;border-radius:3px;flex:none;background:{{ item.tone }}"></div>
+<div style="flex:1;text-align:left;font-size:16.5px">{{ item.name }}</div>
+<div style="font:500 14px/1 'JetBrains Mono',monospace;color:rgba(235,235,245,.4)">{{ item.count }}</div>
+<div style="color:rgba(235,235,245,.28);font-size:17px">›</div>
+</button>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<!-- ══ 3 · STOCK ══ -->
+<sc-if value="{{ isStock }}" hint-placeholder-val="{{ false }}">
+<div style="padding:60px 20px 10px">
+<div style="display:flex;align-items:center;gap:12px">
+<button onClick="{{ goHome }}" style="all:unset;box-sizing:border-box;cursor:pointer;width:38px;height:38px;border-radius:50%;background:#1C1C1E;display:flex;align-items:center;justify-content:center;font-size:18px">‹</button>
+<div style="flex:1;text-align:center;font-size:18px;font-weight:700">{{ stockTitle }}</div>
+<div style="width:38px;height:38px;border-radius:50%;background:#1C1C1E;display:flex;align-items:center;justify-content:center;gap:2.5px"><div style="width:3.5px;height:3.5px;border-radius:50%;background:#fff"></div><div style="width:3.5px;height:3.5px;border-radius:50%;background:#fff"></div><div style="width:3.5px;height:3.5px;border-radius:50%;background:#fff"></div></div>
+</div>
+<div style="display:flex;align-items:center;gap:10px;margin-top:14px;padding:11px 15px;background:#1C1C1E;border-radius:14px">
+<div style="width:14px;height:14px;border:2px solid rgba(235,235,245,.4);border-radius:50%;flex:none"></div>
+<input value="{{ query }}" onChange="{{ onSearch }}" placeholder="Rechercher un produit, une marque…" style="all:unset;flex:1;font-size:15px;color:#fff"/>
+</div>
+<div class="gm-scroll" style="display:flex;gap:7px;margin-top:12px;overflow-x:auto;padding-bottom:2px">
+<sc-for list="{{ filterChips }}" as="item" hint-placeholder-count="8">
+<button onClick="{{ item.onClick }}" style="all:unset;box-sizing:border-box;cursor:pointer;flex:none;padding:9px 14px;border-radius:999px;font:600 13px/1;background:{{ item.bg }};color:{{ item.fg }}">{{ item.label }}</button>
+</sc-for>
+</div>
+</div>
+<div class="gm-scroll" style="flex:1;overflow-y:auto;padding:8px 20px 132px">
+<sc-if value="{{ stockEmpty }}" hint-placeholder-val="{{ false }}">
+<div style="margin-top:36px;padding:40px 24px;text-align:center;background:#1C1C1E;border-radius:22px">
+<div style="width:40px;height:40px;margin:0 auto 16px;border-radius:12px;border:2px dashed rgba(235,235,245,.3)"></div>
+<div style="font-size:17px;font-weight:600">Aucun produit ici</div>
+<div style="font-size:13.5px;line-height:1.45;color:rgba(235,235,245,.5);margin-top:6px;text-wrap:pretty">{{ emptyHint }}</div>
+<button onClick="{{ goScan }}" style="all:unset;box-sizing:border-box;cursor:pointer;margin-top:18px;display:inline-block;padding:12px 20px;border-radius:999px;background:#F5A623;color:#141005;font:600 14px/1">Scanner un produit</button>
+</div>
+</sc-if>
+<div style="background:#1C1C1E;border-radius:22px;overflow:hidden">
+<sc-for list="{{ stockList }}" as="item" hint-placeholder-count="7">
+<button onClick="{{ item.onOpen }}" style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.06)" style-hover="background:#232325">
+<div style="width:52px;height:52px;border-radius:13px;flex:none;position:relative;overflow:hidden;background:repeating-linear-gradient(135deg,#2C2C2E 0 5px,#242426 5px 10px)">
+<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:500 11px 'JetBrains Mono',monospace;color:rgba(235,235,245,.45)">{{ item.initials }}</div>
+</div>
+<div style="flex:1;min-width:0;text-align:left">
+<div style="font-size:16px;font-weight:600;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ item.name }}</div>
+<div style="font-size:12.5px;line-height:1.35;color:rgba(235,235,245,.45);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ item.brand }} · {{ item.qtyLabel }} · {{ item.loc }}</div>
+</div>
+<div style="flex:none;padding:7px 11px;border-radius:999px;font:600 12.5px/1.25;background:{{ item.tint }};color:{{ item.color }};text-align:center;max-width:92px">{{ item.urgLabel }}</div>
+</button>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<!-- ══ 4 · DÉTAIL PRODUIT ══ -->
+<sc-if value="{{ isDetail }}" hint-placeholder-val="{{ false }}">
+<div class="gm-scroll" style="height:100%;overflow-y:auto;padding-bottom:140px">
+<div style="position:relative;padding:56px 20px 22px;background:{{ selHero }}">
+<div style="display:flex;align-items:center;justify-content:space-between">
+<button onClick="{{ back }}" style="all:unset;box-sizing:border-box;cursor:pointer;width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;font-size:19px">‹</button>
+<button onClick="{{ toastSoon }}" style="all:unset;box-sizing:border-box;cursor:pointer;width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;gap:2.5px"><div style="width:3.5px;height:3.5px;border-radius:50%;background:#fff"></div><div style="width:3.5px;height:3.5px;border-radius:50%;background:#fff"></div><div style="width:3.5px;height:3.5px;border-radius:50%;background:#fff"></div></button>
+</div>
+<div style="width:104px;height:104px;margin:6px auto 0;border-radius:20px;position:relative;overflow:hidden;background:repeating-linear-gradient(135deg,rgba(255,255,255,.16) 0 6px,rgba(255,255,255,.08) 6px 12px)">
+<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:500 10px 'JetBrains Mono',monospace;color:rgba(255,255,255,.7)">photo produit</div>
+</div>
+<div style="text-align:center;font-size:29px;line-height:1.12;font-weight:700;letter-spacing:-.02em;margin-top:16px">{{ selName }}</div>
+<div style="text-align:center;font-size:13.5px;color:rgba(255,255,255,.7);margin-top:6px">{{ selBrand }} · {{ selCat }}</div>
+<div style="display:flex;gap:11px;margin-top:20px">
+<button onClick="{{ trashSel }}" style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;text-align:center;padding:15px;border-radius:999px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);font:600 16px/1" style-hover="background:rgba(255,255,255,.22)">Jeter</button>
+<button onClick="{{ consumeSel }}" style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;text-align:center;padding:15px;border-radius:999px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);font:600 16px/1" style-hover="background:rgba(255,255,255,.22)">Consommer</button>
+</div>
+</div>
+
+<div style="display:flex;margin:18px 20px 0;padding:16px 0;background:#1C1C1E;border-radius:22px">
+<sc-for list="{{ selStats }}" as="item" hint-placeholder-count="3">
+<div style="flex:1;text-align:center;border-right:1px solid rgba(255,255,255,.08)">
+<div style="font-size:12.5px;color:rgba(235,235,245,.5)">{{ item.k }}</div>
+<div style="font:700 26px/1 'JetBrains Mono',monospace;margin:7px 0 5px">{{ item.v }}</div>
+<div style="font-size:12px;color:rgba(235,235,245,.4)">{{ item.u }}</div>
+</div>
+</sc-for>
+</div>
+
+<div style="margin:14px 20px 0;background:#1C1C1E;border-radius:22px;overflow:hidden">
+<sc-for list="{{ selRows }}" as="item" hint-placeholder-count="6">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 17px;border-bottom:1px solid rgba(255,255,255,.06)">
+<div style="font-size:16px;color:rgba(235,235,245,.75)">{{ item.k }}</div>
+<div style="font:500 15px/1.3 'JetBrains Mono',monospace;text-align:right;color:rgba(235,235,245,.55)">{{ item.v }}</div>
+</div>
+</sc-for>
+</div>
+
+<div style="display:flex;gap:9px;margin:14px 20px 0">
+<button onClick="{{ goEdit }}" style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;text-align:center;padding:14px;border-radius:16px;background:#1C1C1E;font:600 14.5px/1">Modifier</button>
+<button onClick="{{ moveSel }}" style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;text-align:center;padding:14px;border-radius:16px;background:#1C1C1E;font:600 14.5px/1">Déplacer</button>
+<button onClick="{{ askDelete }}" style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;text-align:center;padding:14px;border-radius:16px;background:rgba(255,69,58,.16);color:#FF453A;font:600 14.5px/1">Supprimer</button>
+</div>
+</div>
+</sc-if>
+
+<!-- ══ 5 · SCANNER ══ -->
+<sc-if value="{{ isScan }}" hint-placeholder-val="{{ false }}">
+<div style="height:100%;background:#0A0A0A;display:flex;flex-direction:column">
+<div style="padding:58px 18px 0;display:flex;align-items:center;justify-content:space-between">
+<button onClick="{{ back }}" style="all:unset;box-sizing:border-box;cursor:pointer;padding:10px 18px;border-radius:999px;background:rgba(255,255,255,.12);font:500 15px/1">Annuler</button>
+<button onClick="{{ goDateScan }}" style="all:unset;box-sizing:border-box;cursor:pointer;padding:10px 18px;border-radius:999px;background:rgba(255,255,255,.12);font:500 15px/1">Scanner la date</button>
+</div>
+
+<sc-if value="{{ scanDenied }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 28px 70px">
+<div style="width:48px;height:48px;border-radius:14px;background:rgba(255,69,58,.16);display:flex;align-items:center;justify-content:center;margin-bottom:22px"><div style="width:22px;height:2.5px;background:#FF453A;transform:rotate(-45deg)"></div></div>
+<div style="font-size:27px;line-height:1.15;font-weight:700;letter-spacing:-.02em">Caméra refusée</div>
+<div style="font-size:14.5px;line-height:1.5;color:rgba(235,235,245,.6);margin-top:11px;text-wrap:pretty">L’app n’a pas accès à l’appareil photo. Autorisez‑la dans Réglages iOS, ou saisissez le code à la main.</div>
+<button onClick="{{ scanReset }}" style="all:unset;box-sizing:border-box;cursor:pointer;margin-top:26px;text-align:center;padding:16px;border-radius:999px;background:#F5A623;color:#141005;font:600 16px/1">Autoriser la caméra</button>
+<button onClick="{{ goManual }}" style="all:unset;box-sizing:border-box;cursor:pointer;margin-top:10px;text-align:center;padding:16px;border-radius:999px;background:rgba(255,255,255,.1);font:600 16px/1">Saisir le code manuellement</button>
+</div>
+</sc-if>
+
+<sc-if value="{{ scanCamera }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 22px 48px">
+<div style="padding:13px 22px;border-radius:14px;background:rgba(20,20,20,.85);border:1px solid rgba(255,255,255,.2);font-size:19px;font-weight:700;margin-bottom:26px">{{ scanHint }}</div>
+<div style="position:relative;width:290px;height:186px;border-radius:20px;overflow:hidden;background:linear-gradient(150deg,#3A2E1C,#161310 70%)">
+<div style="position:absolute;inset:0;opacity:.5;background:repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0 9px,transparent 9px 18px)"></div>
+<div style="position:absolute;top:12px;left:12px;width:30px;height:30px;border-top:4px solid #fff;border-left:4px solid #fff;border-radius:10px 0 0 0"></div>
+<div style="position:absolute;top:12px;right:12px;width:30px;height:30px;border-top:4px solid #fff;border-right:4px solid #fff;border-radius:0 10px 0 0"></div>
+<div style="position:absolute;bottom:12px;left:12px;width:30px;height:30px;border-bottom:4px solid #fff;border-left:4px solid #fff;border-radius:0 0 0 10px"></div>
+<div style="position:absolute;bottom:12px;right:12px;width:30px;height:30px;border-bottom:4px solid #fff;border-right:4px solid #fff;border-radius:0 0 10px 0"></div>
+<div style="position:absolute;left:42px;right:42px;top:50%;height:2px;background:#F5A623;box-shadow:0 0 16px #F5A623;animation:sweep 2.2s ease-in-out infinite"></div>
+</div>
+<button onClick="{{ goManual }}" style="all:unset;box-sizing:border-box;cursor:pointer;margin-top:30px;padding:15px 34px;border-radius:14px;background:#E9960F;color:#141005;font:600 16px/1">Saisir manuellement</button>
+<div style="display:flex;gap:9px;margin-top:24px;width:100%">
+<button onClick="{{ simulateFound }}" style="all:unset;box-sizing:border-box;cursor:pointer;flex:1.4;text-align:center;padding:13px;border-radius:999px;background:rgba(255,255,255,.12);font:500 13px/1">Simuler un scan réussi</button>
+<button onClick="{{ simulateUnknown }}" style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;text-align:center;padding:13px;border-radius:999px;background:rgba(255,255,255,.12);font:500 13px/1">Code inconnu</button>
+<button onClick="{{ denyCamera }}" style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;text-align:center;padding:13px;border-radius:999px;background:rgba(255,255,255,.12);font:500 13px/1">Refus caméra</button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ scanManual }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;padding:32px 24px 44px">
+<div style="font-size:26px;line-height:1.15;font-weight:700;letter-spacing:-.02em">Saisir le code‑barres</div>
+<div style="margin-top:18px;padding:16px 18px;border-radius:16px;background:#1C1C1E;font:500 22px/1 'JetBrains Mono',monospace;letter-spacing:.06em">{{ manualCode }}<span style="opacity:.4">|</span></div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:18px">
+<sc-for list="{{ keypad }}" as="item" hint-placeholder-count="12">
+<button onClick="{{ item.onClick }}" style="all:unset;box-sizing:border-box;cursor:pointer;text-align:center;padding:16px 0;border-radius:14px;background:#1C1C1E;font:500 20px/1 'JetBrains Mono',monospace" style-hover="background:#2C2C2E">{{ item.label }}</button>
+</sc-for>
+</div>
+<button onClick="{{ submitManual }}" style="all:unset;box-sizing:border-box;cursor:pointer;display:block;width:100%;text-align:center;margin-top:16px;padding:16px;border-radius:999px;background:#F5A623;color:#141005;font:600 16px/1">Chercher ce code</button>
+</div>
+</sc-if>
+</div>
+</sc-if>
+
+<!-- ══ 7 · SCANNER UNE DATE ══ -->
+<sc-if value="{{ isDateScan }}" hint-placeholder-val="{{ false }}">
+<div style="height:100%;background:#0A0A0A;display:flex;flex-direction:column">
+<div style="padding:58px 18px 0;display:flex;align-items:center;justify-content:space-between">
+<button onClick="{{ back }}" style="all:unset;box-sizing:border-box;cursor:pointer;padding:10px 18px;border-radius:999px;background:rgba(255,255,255,.12);font:500 15px/1">Annuler</button>
+<div style="font-size:16px;font-weight:600">Date imprimée</div>
+<div style="width:74px"></div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 22px 48px">
+<div style="position:relative;width:300px;height:170px;border-radius:20px;background:linear-gradient(150deg,#33291B,#141210 72%);display:flex;align-items:center;justify-content:center;overflow:hidden">
+<div style="position:absolute;inset:0;opacity:.4;background:repeating-linear-gradient(115deg,rgba(255,255,255,.05) 0 10px,transparent 10px 20px)"></div>
+<div style="font:500 15px/1.55 'JetBrains Mono',monospace;color:rgba(255,255,255,.9);text-align:center">À consommer<br/>jusqu’au 02/09/2026</div>
+<div style="position:absolute;left:58px;right:58px;top:100px;height:40px;border:2.5px solid #F5A623;border-radius:10px;box-shadow:0 0 20px rgba(245,166,35,.4)"></div>
+</div>
+<div style="margin-top:26px;width:100%;padding:17px 19px;border-radius:20px;background:#1C1C1E">
+<div style="font:500 10.5px/1 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:rgba(235,235,245,.45)">Date détectée</div>
+<div style="display:flex;align-items:baseline;gap:11px;margin-top:9px">
+<div style="font:700 26px/1 'JetBrains Mono',monospace">02/09/2026</div>
+<div style="font-size:12.5px;font-weight:600;color:#30D158">DLC · confiance 92 %</div>
+</div>
+</div>
+<div style="display:flex;gap:10px;width:100%;margin-top:14px">
+<button onClick="{{ back }}" style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;text-align:center;padding:16px;border-radius:999px;background:rgba(255,255,255,.1);font:600 16px/1">Reprendre</button>
+<button onClick="{{ confirmOcr }}" style="all:unset;box-sizing:border-box;cursor:pointer;flex:1.4;text-align:center;padding:16px;border-radius:999px;background:#F5A623;color:#141005;font:600 16px/1">Utiliser cette date</button>
+</div>
+</div>
+</div>
+</sc-if>
+
+<!-- ══ 6 · AJOUTER UN PRODUIT ══ -->
+<sc-if value="{{ isAdd }}" hint-placeholder-val="{{ false }}">
+<div class="gm-scroll" style="height:100%;overflow-y:auto;padding:56px 18px 140px">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+<button onClick="{{ back }}" style="all:unset;box-sizing:border-box;cursor:pointer;padding:10px 18px;border-radius:999px;background:rgba(255,255,255,.12);font:500 15px/1">Annuler</button>
+<button onClick="{{ goScan }}" style="all:unset;box-sizing:border-box;cursor:pointer;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center"><div style="width:18px;height:16px;border-left:2px solid #fff;border-right:2px solid #fff;display:flex;justify-content:center;gap:2px"><div style="width:2px;background:#fff"></div><div style="width:2px;background:#fff"></div></div></button>
+<button onClick="{{ saveNew }}" style="all:unset;box-sizing:border-box;cursor:pointer;padding:10px 18px;border-radius:999px;background:#F5A623;color:#141005;font:600 15px/1">Sauvegarder</button>
+</div>
+<div style="font-size:13px;color:rgba(235,235,245,.45);margin:14px 2px 0">{{ addTitle }} · {{ fMeta }}</div>
+
+<div style="margin-top:12px;height:132px;border-radius:20px;background:#232325;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px">
+<div style="width:34px;height:28px;border:2px solid rgba(235,235,245,.5);border-radius:6px;position:relative"><div style="position:absolute;left:5px;bottom:4px;width:8px;height:8px;border-radius:50%;background:rgba(235,235,245,.5)"></div></div>
+<div style="font-size:14px;color:rgba(235,235,245,.5)">Appuyez pour ajouter une image</div>
+</div>
+
+<div style="margin-top:20px;background:#1C1C1E;border-radius:20px;overflow:hidden">
+<div style="display:flex;align-items:center;gap:14px;padding:16px 17px;border-bottom:1px solid rgba(255,255,255,.07)">
+<div style="font-size:16.5px">Nom</div>
+<input value="{{ fName }}" onChange="{{ onFName }}" placeholder="Nom du produit" style="all:unset;flex:1;text-align:right;font-size:16.5px;color:#fff"/>
+</div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 17px">
+<div style="font-size:16.5px">Emplacement</div>
+<div style="font-size:16.5px;color:rgba(235,235,245,.55)">{{ fLoc }}</div>
+</div>
+</div>
+<div class="gm-scroll" style="display:flex;gap:7px;margin-top:10px;overflow-x:auto">
+<sc-for list="{{ locChips }}" as="item" hint-placeholder-count="6">
+<button onClick="{{ item.onClick }}" style="all:unset;box-sizing:border-box;cursor:pointer;flex:none;padding:10px 15px;border-radius:999px;font:600 13.5px/1;background:{{ item.bg }};color:{{ item.fg }}">{{ item.label }}</button>
+</sc-for>
+</div>
+
+<div style="margin-top:18px;background:#1C1C1E;border-radius:20px;overflow:hidden">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:15px 17px;border-bottom:1px solid rgba(255,255,255,.07)">
+<div style="font-size:16.5px">Suivi d’expiration</div>
+<button onClick="{{ toggleTrack }}" style="all:unset;box-sizing:border-box;cursor:pointer;width:51px;height:31px;border-radius:999px;background:{{ trackBg }};display:flex;align-items:center;justify-content:{{ trackPos }};padding:2px"><div style="width:27px;height:27px;border-radius:50%;background:#fff"></div></button>
+</div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:15px 17px">
+<div style="font-size:16.5px">Date · {{ fDateType }}</div>
+<div style="display:flex;align-items:center;gap:9px">
+<div style="padding:8px 13px;border-radius:11px;background:#2C2C2E;font:500 15px/1 'JetBrains Mono',monospace">{{ fDateLabel }}</div>
+<button onClick="{{ goDateScan }}" style="all:unset;box-sizing:border-box;cursor:pointer;font:600 13px/1;color:#F5A623">Scanner</button>
+</div>
+</div>
+</div>
+<div class="gm-scroll" style="display:flex;gap:7px;margin-top:10px;overflow-x:auto">
+<sc-for list="{{ dateChips }}" as="item" hint-placeholder-count="4">
+<button onClick="{{ item.onClick }}" style="all:unset;box-sizing:border-box;cursor:pointer;flex:none;padding:10px 15px;border-radius:999px;font:600 13.5px/1;background:{{ item.bg }};color:{{ item.fg }}">{{ item.label }}</button>
+</sc-for>
+</div>
+
+<div style="margin-top:18px;background:#1C1C1E;border-radius:20px;display:flex;align-items:center;justify-content:space-between;padding:14px 17px">
+<div style="font-size:16.5px">Quantité</div>
+<div style="display:flex;align-items:center;gap:4px;background:#2C2C2E;border-radius:12px;padding:4px">
+<button onClick="{{ qtyMinus }}" style="all:unset;box-sizing:border-box;cursor:pointer;width:44px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font:500 22px/1">−</button>
+<div style="min-width:44px;text-align:center;font:700 18px/1 'JetBrains Mono',monospace">{{ fQty }}</div>
+<button onClick="{{ qtyPlus }}" style="all:unset;box-sizing:border-box;cursor:pointer;width:44px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font:500 22px/1;background:rgba(245,166,35,.2);color:#F5A623">+</button>
+</div>
+</div>
+
+<div style="margin-top:18px;background:#1C1C1E;border-radius:20px;overflow:hidden">
+<sc-for list="{{ optRows }}" as="item" hint-placeholder-count="4">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 17px;border-bottom:1px solid rgba(255,255,255,.06)">
+<div style="font-size:16px">{{ item.k }}</div>
+<div style="display:flex;align-items:center;gap:8px"><span style="font-size:15.5px;color:rgba(235,235,245,.5)">{{ item.v }}</span><span style="color:rgba(235,235,245,.28)">›</span></div>
+</div>
+</sc-for>
+</div>
+<div style="font-size:12.5px;line-height:1.5;color:rgba(235,235,245,.35);margin:12px 2px 0;text-wrap:pretty">Un produit déjà connu se rajoute en deux gestes : scan puis Sauvegarder.</div>
+</div>
+</sc-if>
+
+<!-- ══ 8 · DATES ══ -->
+<sc-if value="{{ isDates }}" hint-placeholder-val="{{ false }}">
+<div class="gm-scroll" style="height:100%;overflow-y:auto;padding:60px 20px 132px">
+<div style="font-size:30px;line-height:1.1;font-weight:700;letter-spacing:-.02em">Dates</div>
+<div style="font-size:13.5px;line-height:1.45;color:rgba(235,235,245,.5);margin-top:7px">Classé par urgence, du plus pressé au plus lointain.</div>
+<div style="display:flex;flex-direction:column;gap:10px;margin-top:20px">
+<sc-for list="{{ dateSections }}" as="item" hint-placeholder-count="6">
+<button onClick="{{ item.onClick }}" style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:14px;padding:17px;border-radius:22px;background:{{ item.bg }};border:1px solid {{ item.border }}" style-hover="filter:brightness(1.2)">
+<div style="width:4px;height:40px;border-radius:3px;flex:none;background:{{ item.color }}"></div>
+<div style="flex:1;text-align:left">
+<div style="font-size:17px;font-weight:600;color:{{ item.color }}">{{ item.label }}</div>
+<div style="font-size:12.5px;line-height:1.35;color:rgba(235,235,245,.45);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px">{{ item.sample }}</div>
+</div>
+<div style="font:700 22px/1 'JetBrains Mono',monospace;color:{{ item.color }}">{{ item.count }}</div>
+<div style="color:rgba(235,235,245,.28);font-size:18px">›</div>
+</button>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<!-- ══ 9 · EMPLACEMENTS · 10 · CATÉGORIES ══ -->
+<sc-if value="{{ isList }}" hint-placeholder-val="{{ false }}">
+<div class="gm-scroll" style="height:100%;overflow-y:auto;padding:60px 20px 132px">
+<div style="display:flex;align-items:center;gap:12px">
+<button onClick="{{ goSettings }}" style="all:unset;box-sizing:border-box;cursor:pointer;width:38px;height:38px;border-radius:50%;background:#1C1C1E;display:flex;align-items:center;justify-content:center;font-size:18px">‹</button>
+<div style="font-size:16px;color:rgba(235,235,245,.6)">Réglages</div>
+</div>
+<div style="font-size:30px;line-height:1.1;font-weight:700;letter-spacing:-.02em;margin-top:16px">{{ listTitle }}</div>
+<div style="font-size:13.5px;line-height:1.5;color:rgba(235,235,245,.5);margin-top:7px;text-wrap:pretty">{{ listSub }}</div>
+<div style="margin-top:18px;background:#1C1C1E;border-radius:22px;overflow:hidden">
+<sc-for list="{{ manageRows }}" as="item" hint-placeholder-count="6">
+<div style="display:flex;align-items:center;gap:13px;padding:15px 16px;border-bottom:1px solid rgba(255,255,255,.06)">
+<div style="display:flex;flex-direction:column;gap:3.5px;flex:none;opacity:.35"><div style="width:15px;height:1.5px;background:#fff"></div><div style="width:15px;height:1.5px;background:#fff"></div><div style="width:15px;height:1.5px;background:#fff"></div></div>
+<div style="width:10px;height:10px;border-radius:3px;flex:none;background:{{ item.tone }}"></div>
+<div style="flex:1;font-size:16.5px">{{ item.name }}</div>
+<div style="font:500 14px/1 'JetBrains Mono',monospace;color:rgba(235,235,245,.4)">{{ item.count }}</div>
+<button onClick="{{ item.onClick }}" style="all:unset;box-sizing:border-box;cursor:pointer;font:600 13px/1;color:#F5A623;padding:6px 8px">Modifier</button>
+</div>
+</sc-for>
+</div>
+<button onClick="{{ toastSoon }}" style="all:unset;box-sizing:border-box;cursor:pointer;display:block;width:100%;text-align:center;margin-top:12px;padding:16px;border-radius:18px;background:rgba(245,166,35,.14);color:#F5A623;font:600 15px/1">+ {{ listAddLabel }}</button>
+</div>
+</sc-if>
+
+<!-- ══ 11 · RÉGLAGES ══ -->
+<sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+<div class="gm-scroll" style="height:100%;overflow-y:auto;padding:60px 20px 132px">
+<div style="font-size:30px;line-height:1.1;font-weight:700;letter-spacing:-.02em">Réglages</div>
+<div style="display:flex;align-items:center;gap:14px;margin-top:18px;padding:16px;background:#1C1C1E;border-radius:22px">
+<div style="width:48px;height:48px;border-radius:14px;background:#F5A623;color:#141005;display:flex;align-items:center;justify-content:center;font:700 18px/1">D</div>
+<div><div style="font-size:17px;font-weight:600">Maison Durand</div><div style="font-size:13px;color:rgba(235,235,245,.5);margin-top:4px">3 appareils · sauvegarde hier</div></div>
+</div>
+<sc-for list="{{ settingsGroups }}" as="g" hint-placeholder-count="3">
+<div style="margin-top:24px">
+<div style="font:500 11px/1 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:rgba(235,235,245,.4);margin-bottom:9px">{{ g.title }}</div>
+<div style="background:#1C1C1E;border-radius:22px;overflow:hidden">
+<sc-for list="{{ g.rows }}" as="item" hint-placeholder-count="4">
+<button onClick="{{ item.onClick }}" style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;padding:15px 17px;border-bottom:1px solid rgba(255,255,255,.06)" style-hover="background:#232325">
+<div style="flex:1;text-align:left;font-size:16.5px">{{ item.k }}</div>
+<div style="font-size:15px;color:rgba(235,235,245,.45)">{{ item.v }}</div>
+<div style="color:rgba(235,235,245,.28);font-size:17px">›</div>
+</button>
+</sc-for>
+</div>
+</div>
+</sc-for>
+<div style="text-align:center;font:400 11.5px/1.6 'JetBrains Mono',monospace;color:rgba(235,235,245,.3);margin-top:26px">Garde‑Manger 1.0 · foyer privé<br/>aucune donnée partagée</div>
+</div>
+</sc-if>
+
+<!-- ══ 12 · SÉCURITÉ ══ -->
+<sc-if value="{{ isSecurity }}" hint-placeholder-val="{{ false }}">
+<div class="gm-scroll" style="height:100%;overflow-y:auto;padding:60px 20px 132px">
+<div style="display:flex;align-items:center;gap:12px">
+<button onClick="{{ goSettings }}" style="all:unset;box-sizing:border-box;cursor:pointer;width:38px;height:38px;border-radius:50%;background:#1C1C1E;display:flex;align-items:center;justify-content:center;font-size:18px">‹</button>
+<div style="font-size:16px;color:rgba(235,235,245,.6)">Réglages</div>
+</div>
+<div style="font-size:30px;line-height:1.1;font-weight:700;letter-spacing:-.02em;margin-top:16px">Sécurité</div>
+<div style="font:500 11px/1 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:rgba(235,235,245,.4);margin:24px 0 9px">Mot de passe du foyer</div>
+<div style="background:#1C1C1E;border-radius:22px;overflow:hidden">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 17px;border-bottom:1px solid rgba(255,255,255,.07)"><div style="font-size:16px;color:rgba(235,235,245,.75)">Actuel</div><input type="password" value="motdepasse" readonly="" style="all:unset;flex:1;text-align:right;font-size:16px;letter-spacing:.2em;color:#fff"/></div>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 17px"><div style="font-size:16px;color:rgba(235,235,245,.75)">Nouveau</div><input type="password" placeholder="8 caractères minimum" style="all:unset;flex:1;text-align:right;font-size:16px;color:#fff"/></div>
+</div>
+<button onClick="{{ toastSoon }}" style="all:unset;box-sizing:border-box;cursor:pointer;display:block;width:100%;text-align:center;margin-top:11px;padding:15px;border-radius:999px;background:#F5A623;color:#141005;font:600 15px/1">Mettre à jour</button>
+<div style="font:500 11px/1 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:rgba(235,235,245,.4);margin:26px 0 9px">Appareils connectés</div>
+<div style="background:#1C1C1E;border-radius:22px;overflow:hidden">
+<sc-for list="{{ sessions }}" as="item" hint-placeholder-count="3">
+<div style="display:flex;align-items:center;gap:12px;padding:15px 17px;border-bottom:1px solid rgba(255,255,255,.06)">
+<div style="width:8px;height:8px;border-radius:50%;flex:none;background:{{ item.tone }}"></div>
+<div style="flex:1"><div style="font-size:16px;font-weight:500">{{ item.name }}</div><div style="font-size:12.5px;color:rgba(235,235,245,.45);margin-top:4px">{{ item.when }}</div></div>
+<div style="font:500 11.5px/1 'JetBrains Mono',monospace;color:rgba(235,235,245,.4)">{{ item.tag }}</div>
+</div>
+</sc-for>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;margin-top:16px">
+<button onClick="{{ logout }}" style="all:unset;box-sizing:border-box;cursor:pointer;text-align:center;padding:16px;border-radius:999px;background:#1C1C1E;font:600 15.5px/1">Se déconnecter</button>
+<button onClick="{{ askLogoutAll }}" style="all:unset;box-sizing:border-box;cursor:pointer;text-align:center;padding:16px;border-radius:999px;background:rgba(255,69,58,.16);color:#FF453A;font:600 15.5px/1">Déconnecter tous les appareils</button>
+</div>
+</div>
+</sc-if>
+
+<!-- ══ FEUILLES ══ -->
+<sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;z-index:90;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);display:flex;align-items:flex-end">
+<div style="width:100%;background:#1C1C1E;border-radius:28px 28px 0 0;padding:20px 20px 42px;animation:rise .22s ease">
+<div style="width:38px;height:5px;border-radius:3px;background:rgba(255,255,255,.2);margin:0 auto 20px"></div>
+
+<sc-if value="{{ sheetFound }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:8px;font:600 11px/1 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:#30D158"><span style="width:7px;height:7px;border-radius:50%;background:#30D158"></span>Produit reconnu</div>
+<div style="display:flex;align-items:center;gap:14px;margin-top:16px">
+<div style="width:66px;height:66px;border-radius:16px;flex:none;position:relative;overflow:hidden;background:repeating-linear-gradient(135deg,#2C2C2E 0 6px,#242426 6px 12px)"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:500 10px 'JetBrains Mono',monospace;color:rgba(235,235,245,.45)">photo</div></div>
+<div><div style="font-size:20px;font-weight:700">{{ foundName }}</div><div style="font-size:13.5px;color:rgba(235,235,245,.5);margin-top:5px">{{ foundBrand }} · {{ foundCat }}</div><div style="font:400 12px/1 'JetBrains Mono',monospace;color:rgba(235,235,245,.35);margin-top:7px">{{ foundCode }}</div></div>
+</div>
+<div style="display:flex;gap:10px;margin-top:22px">
+<button onClick="{{ closeSheet }}" style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;text-align:center;padding:16px;border-radius:999px;background:rgba(255,255,255,.1);font:600 16px/1">Ce n’est pas ça</button>
+<button onClick="{{ acceptFound }}" style="all:unset;box-sizing:border-box;cursor:pointer;flex:1.5;text-align:center;padding:16px;border-radius:999px;background:#F5A623;color:#141005;font:600 16px/1">Continuer</button>
+</div>
+</sc-if>
+
+<sc-if value="{{ sheetUnknown }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:8px;font:600 11px/1 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:#FF9F0A"><span style="width:7px;height:7px;border-radius:50%;background:#FF9F0A"></span>Produit inconnu</div>
+<div style="font-size:24px;line-height:1.15;font-weight:700;letter-spacing:-.02em;margin-top:14px">Ce code n’est pas dans la base</div>
+<div style="font-size:14px;line-height:1.5;color:rgba(235,235,245,.55);margin-top:9px;text-wrap:pretty">Nommez‑le une fois : il sera reconnu automatiquement lors des prochains scans.</div>
+<div style="font:400 12.5px/1 'JetBrains Mono',monospace;color:rgba(235,235,245,.4);margin-top:12px">{{ foundCode }}</div>
+<div style="display:flex;gap:10px;margin-top:22px">
+<button onClick="{{ closeSheet }}" style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;text-align:center;padding:16px;border-radius:999px;background:rgba(255,255,255,.1);font:600 16px/1">Annuler</button>
+<button onClick="{{ acceptUnknown }}" style="all:unset;box-sizing:border-box;cursor:pointer;flex:1.5;text-align:center;padding:16px;border-radius:999px;background:#F5A623;color:#141005;font:600 16px/1">Créer la fiche</button>
+</div>
+</sc-if>
+
+<sc-if value="{{ sheetDelete }}" hint-placeholder-val="{{ false }}">
+<div style="font-size:24px;line-height:1.15;font-weight:700;letter-spacing:-.02em">Supprimer {{ selName }} ?</div>
+<div style="font-size:14px;line-height:1.5;color:rgba(235,235,245,.55);margin-top:9px">La fiche et son historique seront effacés pour tout le foyer.</div>
+<div style="display:flex;gap:10px;margin-top:22px">
+<button onClick="{{ closeSheet }}" style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;text-align:center;padding:16px;border-radius:999px;background:rgba(255,255,255,.1);font:600 16px/1">Garder</button>
+<button onClick="{{ doDelete }}" style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;text-align:center;padding:16px;border-radius:999px;background:#FF453A;color:#fff;font:600 16px/1">Supprimer</button>
+</div>
+</sc-if>
+
+<sc-if value="{{ sheetZero }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:8px;font:600 11px/1 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:rgba(235,235,245,.45)"><span style="width:7px;height:7px;border-radius:50%;background:rgba(235,235,245,.4)"></span>Quantité zéro</div>
+<div style="font-size:24px;line-height:1.15;font-weight:700;letter-spacing:-.02em;margin-top:14px">{{ selName }} est épuisé</div>
+<div style="font-size:14px;line-height:1.5;color:rgba(235,235,245,.55);margin-top:9px">Le retirer du stock, ou le garder à zéro pour la liste de courses ?</div>
+<div style="display:flex;gap:10px;margin-top:22px">
+<button onClick="{{ closeSheet }}" style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;text-align:center;padding:16px;border-radius:999px;background:rgba(255,255,255,.1);font:600 16px/1">Garder à 0</button>
+<button onClick="{{ doDelete }}" style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;text-align:center;padding:16px;border-radius:999px;background:#F5A623;color:#141005;font:600 16px/1">Retirer du stock</button>
+</div>
+</sc-if>
+
+<sc-if value="{{ sheetLogoutAll }}" hint-placeholder-val="{{ false }}">
+<div style="font-size:24px;line-height:1.15;font-weight:700;letter-spacing:-.02em">Déconnecter tous les appareils ?</div>
+<div style="font-size:14px;line-height:1.5;color:rgba(235,235,245,.55);margin-top:9px">Chaque membre du foyer devra ressaisir le mot de passe.</div>
+<div style="display:flex;gap:10px;margin-top:22px">
+<button onClick="{{ closeSheet }}" style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;text-align:center;padding:16px;border-radius:999px;background:rgba(255,255,255,.1);font:600 16px/1">Annuler</button>
+<button onClick="{{ logout }}" style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;text-align:center;padding:16px;border-radius:999px;background:#FF453A;color:#fff;font:600 16px/1">Déconnecter</button>
+</div>
+</sc-if>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;left:16px;right:16px;bottom:118px;z-index:70;display:flex;align-items:center;gap:11px;padding:14px 16px;border-radius:18px;background:rgba(44,44,46,.96);backdrop-filter:blur(14px);box-shadow:0 14px 34px rgba(0,0,0,.55);animation:rise .2s ease">
+<div style="width:20px;height:20px;border-radius:50%;border:2px solid #30D158;flex:none"></div>
+<div style="flex:1;font-size:14px;line-height:1.35">{{ toast }}</div>
+<button onClick="{{ undo }}" style="all:unset;box-sizing:border-box;cursor:pointer;font:600 13px/1;color:#F5A623;padding:6px 8px">Annuler</button>
+</div>
+</sc-if>
+
+<!-- ══ NAVIGATION ══ -->
+<sc-if value="{{ showTabs }}" hint-placeholder-val="{{ true }}">
+<div style="position:absolute;bottom:0;left:0;right:0;z-index:60;padding:0 16px 30px;pointer-events:none">
+<div style="display:flex;align-items:center;gap:12px;pointer-events:auto">
+<div style="flex:1;display:flex;align-items:center;gap:2px;padding:6px;border-radius:999px;background:rgba(28,28,30,.94);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.08)">
+<button onClick="{{ goHome }}" style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 0;border-radius:999px;background:{{ bHome }};color:{{ cHome }}">
+<div style="width:18px;height:16px;border:2px solid currentColor;border-radius:4px"></div>
+<span style="font-size:10px;font-weight:600">Accueil</span>
+</button>
+<button onClick="{{ goStock }}" style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 0;border-radius:999px;background:{{ bStock }};color:{{ cStock }}">
+<div style="width:18px;height:16px;display:flex;flex-direction:column;justify-content:space-between"><div style="height:4px;border:2px solid currentColor;border-radius:2px"></div><div style="height:9px;border:2px solid currentColor;border-radius:3px"></div></div>
+<span style="font-size:10px;font-weight:600">Stock</span>
+</button>
+<button onClick="{{ goDates }}" style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 0;border-radius:999px;background:{{ bDates }};color:{{ cDates }}">
+<div style="width:17px;height:17px;border:2px solid currentColor;border-radius:50%;position:relative"><div style="position:absolute;left:5.5px;top:2.5px;width:2px;height:6px;background:currentColor"></div></div>
+<span style="font-size:10px;font-weight:600">Dates</span>
+</button>
+<button onClick="{{ goSettings }}" style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 0;border-radius:999px;background:{{ bSet }};color:{{ cSet }}">
+<div style="width:17px;height:17px;border:2px solid currentColor;border-radius:50%;display:flex;align-items:center;justify-content:center"><div style="width:5px;height:5px;border-radius:50%;background:currentColor"></div></div>
+<span style="font-size:10px;font-weight:600">Réglages</span>
+</button>
+</div>
+<button onClick="{{ goScan }}" style="all:unset;box-sizing:border-box;cursor:pointer;flex:none;width:66px;height:66px;border-radius:50%;background:#F5A623;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;box-shadow:0 12px 26px rgba(245,166,35,.35);position:relative;overflow:hidden" style-hover="background:#FFB53D">
+<div style="width:24px;height:20px;border-left:2.5px solid #141005;border-right:2.5px solid #141005;display:flex;justify-content:center;gap:3px"><div style="width:2.5px;background:#141005"></div><div style="width:2.5px;background:#141005"></div></div>
+<span style="font-size:9.5px;font-weight:700;color:#141005">Scanner</span>
+</button>
+</div>
+</div>
+</sc-if>
+
+<div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:139px;height:5px;border-radius:3px;background:rgba(255,255,255,.35);z-index:65;pointer-events:none"></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;urgency&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Jours restants&quot;,&quot;Couleur seule&quot;,&quot;Jauge de fraîcheur&quot;],&quot;default&quot;:&quot;Jours restants&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Péremption&quot;},&quot;showIndex&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Revue&quot;},&quot;demoBanner&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Revue&quot;}}">
+class Component extends DCLogic {
+  TODAY = new Date(2026, 7, 26);
+  MONTHS = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+  LOCS = ['Frigo','Congélateur','Placard','Pharmacie','Cellier','Cave'];
+  TONES = { 'Frigo':'#0A84FF','Congélateur':'#64D2FF','Placard':'#FF9F0A','Pharmacie':'#BF5AF2','Cellier':'#30D158','Cave':'#AC8E68' };
+  CATS = ['Produits laitiers','Viandes','Fruits & légumes','Boissons','Épicerie','Médicaments','Hygiène','Entretien'];
+  SEED = [
+    { id:1, name:'Yaourts nature x8', brand:'Malo', qty:6, unit:'pots', loc:'Frigo', cat:'Produits laitiers', date:'2026-08-26', dt:'DLC', code:'3256540012784' },
+    { id:2, name:'Jambon blanc 4 tranches', brand:'Marque Repère', qty:1, unit:'paquet', loc:'Frigo', cat:'Viandes', date:'2026-08-27', dt:'DLC', code:'3564700198432' },
+    { id:3, name:'Salade mâche 125 g', brand:'Les Crudettes', qty:1, unit:'sachet', loc:'Frigo', cat:'Fruits & légumes', date:'2026-08-25', dt:'DLC', code:'3276550091238' },
+    { id:4, name:'Crème fraîche 20 cl', brand:'Elle & Vire', qty:1, unit:'pot', loc:'Frigo', cat:'Produits laitiers', date:'2026-08-28', dt:'DLC', code:'3161210004512' },
+    { id:5, name:'Café moulu 250 g', brand:'Terres Lointaines', qty:1, unit:'paquet', loc:'Placard', cat:'Épicerie', date:'2026-08-29', dt:'DDM', code:'3021761120043' },
+    { id:6, name:'Œufs plein air x6', brand:'Cocorette', qty:6, unit:'œufs', loc:'Frigo', cat:'Épicerie', date:'2026-08-30', dt:'DCR', code:'3268930001127' },
+    { id:7, name:'Sirop toux miel', brand:'Phytosolis', qty:1, unit:'flacon', loc:'Pharmacie', cat:'Médicaments', date:'2026-09-02', dt:'EXP', code:'3400931845127', lot:'L4821' },
+    { id:8, name:'Beurre doux 250 g', brand:'Elle & Vire', qty:1, unit:'plaquette', loc:'Frigo', cat:'Produits laitiers', date:'2026-09-10', dt:'DDM', code:'3161211208114' },
+    { id:9, name:'Lait demi-écrémé 1 L', brand:'Bio Village', qty:3, unit:'briques', loc:'Placard', cat:'Produits laitiers', date:'2026-11-14', dt:'DDM', code:'3450420098117' },
+    { id:10, name:'Filet de poulet', brand:'Boucherie Martin', qty:2, unit:'portions', loc:'Congélateur', cat:'Viandes', date:'2027-02-10', dt:'DDM', code:'2000000451233' },
+    { id:11, name:'Petits pois surgelés', brand:'Belle France', qty:1, unit:'sachet 750 g', loc:'Congélateur', cat:'Fruits & légumes', date:'2027-05-01', dt:'DDM', code:'3258561200784' },
+    { id:12, name:'Paracétamol 500 mg', brand:'Biogaran', qty:2, unit:'boîtes', loc:'Pharmacie', cat:'Médicaments', date:'2027-03-31', dt:'EXP', code:'3400930012345', lot:'B7710' },
+    { id:13, name:'Pâtes penne 500 g', brand:'Panzani', qty:2, unit:'paquets', loc:'Placard', cat:'Épicerie', date:'2027-09-30', dt:'DDM', code:'3038350021049' },
+    { id:14, name:'Sauce tomate basilic', brand:'Panzani', qty:4, unit:'bocaux', loc:'Placard', cat:'Épicerie', date:'2028-01-15', dt:'DDM', code:'3038359001872' },
+    { id:15, name:'Dentifrice menthe', brand:'Émoform', qty:3, unit:'tubes', loc:'Placard', cat:'Hygiène', date:null, dt:'—', code:'7611841701234' },
+    { id:16, name:'Lessive liquide 2 L', brand:"L'Arbre Vert", qty:1, unit:'bidon', loc:'Cellier', cat:'Entretien', date:null, dt:'—', code:'3450601050119' }
+  ];
+  KNOWN = { name:'Yaourt nature x4', brand:'Malo', cat:'Produits laitiers', code:'3256540012784', unit:'pots', dt:'DLC', loc:'Frigo' };
+  state = { screen:'home', sub:null, sel:1, query:'', filter:'Tous', sheet:null, toast:null, netError:false, manual:'', form:null, products:null, undoSnap:null, track:true };
+
+  get products() { return this.state.products || this.SEED; }
+
+  days(iso) {
+    if (!iso) return null;
+    const p = iso.split('-');
+    return Math.round((new Date(+p[0], +p[1] - 1, +p[2]) - this.TODAY) / 86400000);
+  }
+  fr(iso, short) {
+    if (!iso) return 'Sans date';
+    const p = iso.split('-');
+    return short ? (+p[2]) + ' ' + this.MONTHS[+p[1] - 1] : (+p[2]) + ' ' + this.MONTHS[+p[1] - 1] + ' ' + p[0];
+  }
+  urg(p) {
+    const d = this.days(p.date);
+    if (d === null) return { k:'nodate', label:'Sans date', color:'rgba(235,235,245,.45)', tint:'rgba(255,255,255,.07)', d:null };
+    if (d < 0) return { k:'expired', label:'Expiré · ' + Math.abs(d) + ' j', color:'#FF453A', tint:'rgba(255,69,58,.16)', d:d };
+    if (d === 0) return { k:'today', label:"Aujourd'hui", color:'#FF453A', tint:'rgba(255,69,58,.16)', d:d };
+    if (d <= 3) return { k:'next3', label:'Dans ' + d + ' j', color:'#FF9F0A', tint:'rgba(255,159,10,.16)', d:d };
+    if (d <= 7) return { k:'week', label:'Dans ' + d + ' j', color:'#FFD60A', tint:'rgba(255,214,10,.14)', d:d };
+    return { k:'later', label:'Dans ' + d + ' j', color:'rgba(235,235,245,.6)', tint:'rgba(255,255,255,.08)', d:d };
+  }
+  deco(p) {
+    const u = this.urg(p);
+    const style = this.props.urgency || 'Jours restants';
+    return Object.assign({}, p, {
+      initials: p.name.trim().slice(0, 2).toUpperCase(),
+      qtyLabel: p.qty + ' ' + p.unit,
+      urgLabel: style === 'Couleur seule' ? this.fr(p.date, true) : u.label,
+      color: u.color, tint: u.tint, urgKey: u.k,
+      dateShort: this.fr(p.date, true),
+      isGauge: style === 'Jauge de fraîcheur' && u.d !== null,
+      gauge: Math.max(6, 100 - Math.min(Math.max(u.d || 0, 0), 30) / 30 * 100) + '%',
+      onOpen: () => this.setState({ screen:'detail', sel:p.id }),
+      onConsume: () => this.consume(p.id)
+    });
+  }
+
+  toastMsg(t, snap) { this.setState({ toast:t, undoSnap: snap || null }); clearTimeout(this._t); this._t = setTimeout(() => this.setState({ toast:null }), 3600); }
+  consume(id) {
+    const snap = this.products.map(p => Object.assign({}, p));
+    const next = this.products.map(p => p.id === id ? Object.assign({}, p, { qty: Math.max(0, p.qty - 1) }) : p);
+    const p = next.find(x => x.id === id);
+    this.setState({ products: next, sheet: p.qty === 0 ? 'zero' : null, sel: p.qty === 0 ? id : this.state.sel });
+    if (p.qty > 0) this.toastMsg('−1 ' + p.name + ' · reste ' + p.qty + ' ' + p.unit, snap);
+  }
+  go = (screen, extra) => this.setState(Object.assign({ screen:screen, sheet:null }, extra || {}));
+
+  renderVals() {
+    const s = this.state, all = this.products.map(p => this.deco(p));
+    const scr = s.screen, sub = s.sub;
+    const cnt = k => all.filter(p => p.urgKey === k).length;
+    const locCount = n => all.filter(p => p.loc === n).length;
+    const sample = k => { const l = all.filter(p => p.urgKey === k); return l.length ? l.slice(0, 2).map(p => p.name).join(', ') : 'Rien pour l’instant'; };
+
+    const f = s.filter;
+    const q = s.query.trim().toLowerCase();
+    const matchF = p => f === 'Tous' ? true : f === 'Urgent' ? ['expired','today','next3'].indexOf(p.urgKey) >= 0 : this.LOCS.indexOf(f) >= 0 ? p.loc === f : p.urgKey === f;
+    const stockList = all.filter(p => matchF(p) && (!q || (p.name + ' ' + p.brand + ' ' + p.cat).toLowerCase().indexOf(q) >= 0))
+      .sort((a, b) => (this.days(a.date) === null ? 9e5 : this.days(a.date)) - (this.days(b.date) === null ? 9e5 : this.days(b.date)));
+    const urgentList = all.filter(p => ['expired','today','next3','week'].indexOf(p.urgKey) >= 0)
+      .sort((a, b) => this.days(a.date) - this.days(b.date)).slice(0, 4);
+
+    const sel = all.find(p => p.id === s.sel) || all[0];
+    const form = s.form || {};
+    const chip = (label, active, onClick) => ({ label, onClick, bg: active ? '#F5A623' : 'rgba(255,255,255,.1)', fg: active ? '#141005' : '#fff' });
+    const filterLabels = { expired:'Expirés', today:"Aujourd'hui", next3:'3 prochains jours', week:'Cette semaine', later:'Plus tard', nodate:'Sans date' };
+    const heroes = { expired:'linear-gradient(#7E1B13,#2A0C08 82%)', today:'linear-gradient(#7E1B13,#2A0C08 82%)', next3:'linear-gradient(#7A4A06,#2A1A04 82%)', week:'linear-gradient(#6E5A05,#241D03 82%)', later:'linear-gradient(#14432A,#0A1A11 82%)', nodate:'linear-gradient(#2C2C2E,#111 82%)' };
+
+    const index = [
+      ['1','Connexion','login'], ['2','Accueil','home'], ['3','Stock','stock'], ['4','Détail produit','detail'],
+      ['5','Scanner','scan'], ['6','Ajouter un produit','add'], ['7','Scanner une date','datescan'], ['8','Dates','dates'],
+      ['9','Emplacements','locations'], ['10','Catégories','categories'], ['11','Réglages','settings'], ['12','Sécurité','security'],
+      ['·','Produit reconnu','sheet:found'], ['·','Produit inconnu','sheet:unknown'], ['·','Caméra refusée','scan:denied'],
+      ['·','Saisie manuelle','scan:manual'], ['·','Emplacement vide','empty:Cave'], ['·','Confirmer suppression','sheet:delete'],
+      ['·','Quantité zéro','sheet:zero'], ['·','Erreur réseau','error']
+    ];
+
+    return {
+      showIndex: this.props.showIndex !== false,
+      demoBanner: !!this.props.demoBanner,
+      indexItems: index.map(r => ({
+        num: r[0], label: r[1],
+        color: (r[2] === scr || r[2] === scr + ':' + sub) ? '#F5A623' : 'rgba(235,235,245,.65)',
+        bg: (r[2] === scr || r[2] === scr + ':' + sub) ? 'rgba(245,166,35,.14)' : 'transparent',
+        onClick: () => {
+          const k = r[2];
+          if (k === 'error') return this.setState({ screen:'home', netError:true, sheet:null });
+          if (k.indexOf('sheet:') === 0) return this.setState({ screen: k === 'sheet:delete' || k === 'sheet:zero' ? 'detail' : 'scan', sub:'camera', sheet:k.slice(6) });
+          if (k.indexOf('scan:') === 0) return this.setState({ screen:'scan', sub:k.slice(5), sheet:null });
+          if (k.indexOf('empty:') === 0) return this.setState({ screen:'stock', filter:k.slice(6), query:'', sheet:null });
+          if (k === 'add') return this.setState({ screen:'add', sheet:null, form: s.form || Object.assign({}, this.KNOWN, { qty:4, date:'2026-09-02' }) });
+          this.setState({ screen:k, sub: k === 'scan' ? 'camera' : null, sheet:null });
+        }
+      })),
+
+      isLogin: scr === 'login', isHome: scr === 'home', isStock: scr === 'stock', isDetail: scr === 'detail',
+      isScan: scr === 'scan', isAdd: scr === 'add', isDateScan: scr === 'datescan', isDates: scr === 'dates',
+      isList: scr === 'locations' || scr === 'categories', isSettings: scr === 'settings', isSecurity: scr === 'security',
+      showTabs: ['login','scan','datescan','add'].indexOf(scr) < 0,
+      netError: s.netError, clearError: () => this.setState({ netError:false }),
+
+      todayLabel: 'Mercredi 26 août',
+      statTiles: [
+        { label:'Tous', count: all.length, fg:'#0A84FF', bg:'rgba(10,132,255,.14)', border:'rgba(10,132,255,.35)', shape:'3px', onClick: () => this.setState({ screen:'stock', filter:'Tous', query:'' }) },
+        { label:"Aujourd'hui", count: cnt('today'), fg:'#30D158', bg:'rgba(48,209,88,.13)', border:'rgba(48,209,88,.32)', shape:'2px', onClick: () => this.setState({ screen:'stock', filter:'today', query:'' }) },
+        { label:'Expirés', count: cnt('expired'), fg:'#FF453A', bg:'rgba(255,69,58,.13)', border:'rgba(255,69,58,.32)', shape:'50%', onClick: () => this.setState({ screen:'stock', filter:'expired', query:'' }) },
+        { label:'Programmés', count: cnt('next3') + cnt('week') + cnt('later'), fg:'#FF9F0A', bg:'rgba(255,159,10,.13)', border:'rgba(255,159,10,.32)', shape:'50%', onClick: () => this.setState({ screen:'dates' }) }
+      ],
+      urgentList, hasUrgent: urgentList.length > 0, noUrgent: urgentList.length === 0,
+      locRows: this.LOCS.map(n => ({ name:n, count: locCount(n) + '', tone: this.TONES[n], onClick: () => this.setState({ screen:'stock', filter:n, query:'' }) })),
+
+      stockList, stockEmpty: stockList.length === 0,
+      stockTitle: f === 'Tous' ? 'Tout le stock' : (filterLabels[f] || f),
+      emptyHint: q ? 'Aucun résultat pour « ' + s.query + ' ».' : 'Rien de rangé dans ' + f + ' pour le moment.',
+      query: s.query, onSearch: e => this.setState({ query: e.target.value }),
+      filterChips: ['Tous','Urgent'].concat(this.LOCS).map(v => chip(v, f === v, () => this.setState({ filter:v })))
+        .concat(this.LOCS.indexOf(f) < 0 && ['Tous','Urgent'].indexOf(f) < 0 ? [chip(filterLabels[f] || f, true, () => this.setState({ filter:'Tous' }))] : []),
+
+      selName: sel.name, selBrand: sel.brand, selCat: sel.cat, selHero: heroes[sel.urgKey],
+      selStats: [
+        { k:'Ajouté', v:'5', u:'jours' },
+        { k:'Quantité', v: sel.qty + '', u: sel.unit },
+        { k: this.days(sel.date) === null ? 'Expire' : (this.days(sel.date) < 0 ? 'Expiré' : 'Expire'), v: this.days(sel.date) === null ? '—' : Math.abs(this.days(sel.date)) + '', u:'jours' }
+      ],
+      selRows: [
+        { k:'Emplacement', v: sel.loc },
+        { k:'Catégorie', v: sel.cat },
+        { k: sel.dt === '—' ? 'Date' : 'Date · ' + sel.dt, v: this.fr(sel.date) },
+        { k:'Code-barres', v: sel.code },
+        { k:'Lot', v: sel.lot || '—' },
+        { k:'Date d’ajout', v:'21 août 2026' }
+      ],
+      consumeSel: () => this.consume(sel.id),
+      goEdit: () => this.setState({ screen:'add', form: Object.assign({}, sel), sheet:null }),
+      moveSel: () => this.toastMsg(sel.name + ' déplacé vers Placard'),
+      trashSel: () => this.toastMsg(sel.name + ' jeté · retiré du stock'),
+      askDelete: () => this.setState({ sheet:'delete' }),
+
+      scanDenied: sub === 'denied', scanManual: sub === 'manual', scanCamera: sub !== 'denied' && sub !== 'manual',
+      scanHint: 'Scannez le code barre',
+      simulateFound: () => this.setState({ sheet:'found', sub:'camera' }),
+      simulateUnknown: () => this.setState({ sheet:'unknown', sub:'camera' }),
+      denyCamera: () => this.setState({ sub:'denied', sheet:null }),
+      scanReset: () => this.setState({ sub:'camera' }),
+      goManual: () => this.setState({ screen:'scan', sub:'manual', sheet:null }),
+      manualCode: s.manual || '',
+      keypad: ['1','2','3','4','5','6','7','8','9','⌫','0','✓'].map(d => ({
+        label: d,
+        onClick: () => d === '⌫' ? this.setState({ manual: s.manual.slice(0, -1) })
+          : d === '✓' ? this.setState({ sub:'camera', sheet: s.manual.length > 5 ? 'found' : 'unknown' })
+          : this.setState({ manual: (s.manual + d).slice(0, 13) })
+      })),
+      submitManual: () => this.setState({ sub:'camera', sheet: s.manual.length > 5 ? 'found' : 'unknown' }),
+
+      sheetOpen: !!s.sheet, sheetFound: s.sheet === 'found', sheetUnknown: s.sheet === 'unknown',
+      sheetDelete: s.sheet === 'delete', sheetZero: s.sheet === 'zero', sheetLogoutAll: s.sheet === 'logoutAll',
+      closeSheet: () => this.setState({ sheet:null }),
+      foundName: this.KNOWN.name, foundBrand: this.KNOWN.brand, foundCat: this.KNOWN.cat,
+      foundCode: s.manual && s.manual.length > 3 ? s.manual : this.KNOWN.code,
+      acceptFound: () => this.setState({ screen:'add', sheet:null, form: Object.assign({}, this.KNOWN, { qty:4, date:'2026-09-02', known:true }) }),
+      acceptUnknown: () => this.setState({ screen:'add', sheet:null, form: { name:'', brand:'', cat:'', unit:'unités', dt:'DLC', loc:'Frigo', qty:1, date:null, code: s.manual || '0000000000000' } }),
+      doDelete: () => { this.setState({ products: this.products.filter(p => p.id !== sel.id), screen:'stock', sheet:null }); this.toastMsg(sel.name + ' retiré du stock'); },
+
+      addTitle: form.known ? 'Produit reconnu' : form.id ? 'Modifier le produit' : 'Nouveau produit',
+      fName: form.name || '', onFName: e => this.setState({ form: Object.assign({}, form, { name: e.target.value }) }),
+      fMeta: (form.brand || 'marque à préciser') + ' · ' + (form.code || 'sans code'),
+      fQty: form.qty || 1,
+      qtyPlus: () => this.setState({ form: Object.assign({}, form, { qty: (form.qty || 1) + 1 }) }),
+      qtyMinus: () => this.setState({ form: Object.assign({}, form, { qty: Math.max(1, (form.qty || 1) - 1) }) }),
+      fLoc: form.loc || 'Frigo', fDateType: form.dt && form.dt !== '—' ? form.dt : 'DLC',
+      fDateLabel: form.date ? this.fr(form.date) : 'Aucune',
+      trackBg: s.track ? '#30D158' : 'rgba(120,120,128,.4)', trackPos: s.track ? 'flex-end' : 'flex-start',
+      toggleTrack: () => this.setState({ track: !s.track }),
+      locChips: this.LOCS.map(n => chip(n, (form.loc || 'Frigo') === n, () => this.setState({ form: Object.assign({}, form, { loc:n }) }))),
+      dateChips: [['Dans 3 j','2026-08-29'], ['Dans 1 semaine','2026-09-02'], ['Dans 1 mois','2026-09-26'], ['Sans date', null]]
+        .map(r => chip(r[0], form.date === r[1], () => this.setState({ form: Object.assign({}, form, { date:r[1] }) }))),
+      optRows: [
+        { k:'Catégorie', v: form.cat || 'À choisir' },
+        { k:'Marque', v: form.brand || 'À préciser' },
+        { k:'Type de date', v: form.dt && form.dt !== '—' ? form.dt : 'DLC' },
+        { k:'Lot / notes', v: form.lot || 'Facultatif' }
+      ],
+      saveNew: () => {
+        const nf = Object.assign({}, form);
+        let list = this.products;
+        if (nf.id) list = list.map(p => p.id === nf.id ? Object.assign({}, p, nf) : p);
+        else list = [Object.assign({ id: Date.now(), cat: nf.cat || 'Épicerie', brand: nf.brand || '—', dt: nf.dt || 'DLC', unit: nf.unit || 'unités', name: nf.name || 'Produit sans nom' }, nf)].concat(list);
+        this.setState({ products:list, screen:'home', form:null, sheet:null });
+        this.toastMsg((nf.name || 'Produit') + ' rangé au ' + (nf.loc || 'Frigo'));
+      },
+      confirmOcr: () => this.setState({ screen:'add', form: Object.assign({}, form.name ? form : Object.assign({}, this.KNOWN, { qty:4 }), { date:'2026-09-02', dt:'DLC' }) }),
+
+      dateSections: [['expired','Expirés','#FF453A','rgba(255,69,58,.12)','rgba(255,69,58,.3)'], ['today',"Aujourd'hui",'#FF453A','rgba(255,69,58,.12)','rgba(255,69,58,.3)'],
+        ['next3','3 prochains jours','#FF9F0A','rgba(255,159,10,.12)','rgba(255,159,10,.3)'], ['week','Cette semaine','#FFD60A','rgba(255,214,10,.1)','rgba(255,214,10,.26)'],
+        ['later','Plus tard','#30D158','rgba(48,209,88,.1)','rgba(48,209,88,.26)'], ['nodate','Sans date','rgba(235,235,245,.6)','#1C1C1E','rgba(255,255,255,.08)']]
+        .map(r => ({ label: r[1], count: cnt(r[0]), sample: sample(r[0]), color: r[2], bg: r[3], border: r[4], onClick: () => this.setState({ screen:'stock', filter:r[0], query:'' }) })),
+
+      listTitle: scr === 'categories' ? 'Catégories' : 'Emplacements',
+      listSub: scr === 'categories' ? 'Regroupez les produits pour filtrer le stock plus vite.' : 'Glissez pour réordonner : l’ordre est repris dans le formulaire d’ajout.',
+      listAddLabel: scr === 'categories' ? 'Nouvelle catégorie' : 'Nouvel emplacement',
+      manageRows: (scr === 'categories' ? this.CATS : this.LOCS).map(n => ({
+        name:n,
+        count: (scr === 'categories' ? all.filter(p => p.cat === n).length : locCount(n)) + '',
+        tone: scr === 'categories' ? '#AC8E68' : this.TONES[n],
+        onClick: () => this.toastMsg(n + ' · édition à venir')
+      })),
+
+      settingsGroups: [
+        { title:'Le foyer', rows: [
+          { k:'Emplacements', v: this.LOCS.length + '', onClick: () => this.go('locations') },
+          { k:'Catégories', v: this.CATS.length + '', onClick: () => this.go('categories') },
+          { k:'Alertes', v:'2 j avant', onClick: () => this.toastMsg('Alertes : réglage à venir') }
+        ] },
+        { title:'Données', rows: [
+          { k:'Sauvegarde & export', v:'CSV', onClick: () => this.toastMsg('Export CSV envoyé par mail') },
+          { k:'Mode démonstration', v: this.props.demoBanner ? 'Activé' : 'Désactivé', onClick: () => this.toastMsg('Réglable dans le panneau Tweaks') }
+        ] },
+        { title:'Accès', rows: [
+          { k:'Sécurité', v:'Mot de passe', onClick: () => this.go('security') },
+          { k:'À propos', v:'v1.0', onClick: () => this.toastMsg('Garde-Manger 1.0') }
+        ] }
+      ],
+      sessions: [
+        { name:'iPhone 15 · Marie', when:"Actif à l'instant", tag:'cet appareil', tone:'#30D158' },
+        { name:'iPhone 13 · Thomas', when:"Aujourd'hui, 08:12", tag:'actif', tone:'#30D158' },
+        { name:'iPad cuisine', when:'Hier, 19:40', tag:'inactif', tone:'rgba(235,235,245,.3)' }
+      ],
+      askLogoutAll: () => this.setState({ sheet:'logoutAll' }),
+      logout: () => this.setState({ screen:'login', sheet:null }),
+      signIn: () => this.setState({ screen:'home' }),
+      back: () => this.setState({ screen: scr === 'detail' ? 'stock' : scr === 'add' ? 'scan' : scr === 'datescan' ? 'add' : 'home', sheet:null, sub: scr === 'datescan' ? null : s.sub }),
+      goHome: () => this.go('home'), goStock: () => this.setState({ screen:'stock', filter:'Tous', sheet:null }), goDates: () => this.go('dates'),
+      goSettings: () => this.go('settings'), goSecurity: () => this.go('security'),
+      goScan: () => this.setState({ screen:'scan', sub:'camera', sheet:null, manual:'' }),
+      goDateScan: () => this.setState({ screen:'datescan', sheet:null }),
+      cHome: scr === 'home' ? '#F5A623' : 'rgba(235,235,245,.5)', bHome: scr === 'home' ? 'rgba(245,166,35,.16)' : 'transparent',
+      cStock: scr === 'stock' || scr === 'detail' ? '#F5A623' : 'rgba(235,235,245,.5)', bStock: scr === 'stock' || scr === 'detail' ? 'rgba(245,166,35,.16)' : 'transparent',
+      cDates: scr === 'dates' ? '#F5A623' : 'rgba(235,235,245,.5)', bDates: scr === 'dates' ? 'rgba(245,166,35,.16)' : 'transparent',
+      cSet: ['settings','security','locations','categories'].indexOf(scr) >= 0 ? '#F5A623' : 'rgba(235,235,245,.5)',
+      bSet: ['settings','security','locations','categories'].indexOf(scr) >= 0 ? 'rgba(245,166,35,.16)' : 'transparent',
+      toast: s.toast,
+      undo: () => { if (s.undoSnap) this.setState({ products: s.undoSnap, undoSnap:null }); this.setState({ toast:null }); },
+      toastSoon: () => this.toastMsg('Action de démonstration')
+    };
+  }
+}
+</script>
+</body>
+</html>
