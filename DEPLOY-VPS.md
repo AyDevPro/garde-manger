@@ -1,12 +1,13 @@
 # Déploiement production — VPS aydev
 
-Cette branche **`prod`** adapte garde-manger au VPS `aydev` : le TLS et le
-routage sont assurés par le **Traefik** déjà en place (compose racine
+La branche **`main`** est la branche de **production** : le TLS et le routage
+sont assurés par le **Traefik** déjà en place (compose racine
 `/root/aydev/docker-compose.yml`), pas par le Caddy embarqué de la branche `dev`.
+Tout push sur `main` redéploie automatiquement (voir `.github/workflows/deploy.yml`).
 
 ## Ce qui change par rapport à `dev`
 
-| | `dev` (local) | `prod` (VPS) |
+| | `dev` (local) | `main` (VPS / prod) |
 |---|---|---|
 | Reverse-proxy | Caddy embarqué (ports 80/443) | Traefik du VPS (labels) |
 | Réseau | par défaut | externe `aydev_aydev-net` |
@@ -20,11 +21,11 @@ routage sont assurés par le **Traefik** déjà en place (compose racine
   `aydev_aydev-net` présent.
 - DNS `garde-manger.aydev.app` → IP du VPS (déjà en place).
 
-## Mise en service
+## Mise en service (première fois)
 
 ```bash
 cd /root/aydev/garde-manger
-git checkout prod
+git checkout main
 cp .env.prod.example .env      # puis renseigner les secrets
 docker compose up -d --build
 docker compose logs -f app     # suivre le 1er démarrage (migrations + seed)
@@ -33,11 +34,19 @@ docker compose logs -f app     # suivre le 1er démarrage (migrations + seed)
 Traefik détecte le conteneur `garde-manger-app` (label `traefik.enable=true`),
 publie `https://garde-manger.aydev.app` et obtient le certificat automatiquement.
 
-## Mettre à jour après un push
+## Mise à jour (flux normal)
+
+Le déploiement est **automatique** : il suffit de pousser sur `main`.
+
+```bash
+git push origin main   # → GitHub Actions redéploie sur le VPS
+```
+
+Redéploiement manuel sur le VPS si besoin :
 
 ```bash
 cd /root/aydev/garde-manger
-git pull origin prod
+git pull origin main
 docker compose up -d --build
 ```
 

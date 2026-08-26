@@ -1,12 +1,12 @@
 name: Deploy to Production
 
-# Push-to-deploy : tout push sur la branche `prod` redéploie sur le VPS aydev.
+# Push-to-deploy : tout push sur la branche `main` redéploie sur le VPS aydev.
 # Secrets requis (repo › Settings › Secrets and variables › Actions) — identiques
 # aux autres apps : VPS_HOST, VPS_USER, VPS_SSH_KEY.
 on:
   push:
     branches:
-      - prod
+      - main
 
 jobs:
   deploy:
@@ -23,9 +23,9 @@ jobs:
             set -e
             cd /root/aydev/garde-manger
 
-            # Récupère la dernière version de la branche prod
-            git fetch origin prod
-            git reset --hard origin/prod
+            # Récupère la dernière version de la branche main
+            git fetch origin main
+            git reset --hard origin/main
 
             # Rebuild + redémarrage (les migrations SQL sont appliquées
             # automatiquement au démarrage de l'app).
