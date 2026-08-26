@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { BackHeader, Button, Card, Screen, Title } from '../components/ui';
 import { ConfirmSheet } from './sheets';
 import { api } from '../lib/api';
+import { useDragReorder } from '../lib/useDragReorder';
 import { useStore } from '../store';
 import type { Category, Location } from '../types';
 
@@ -37,15 +38,17 @@ export function Manage() {
     reset();
   }
 
-  async function move(id: string, delta: number) {
-    const ids = rows.map((r) => r.id);
-    const i = ids.indexOf(id);
-    const j = i + delta;
-    if (j < 0 || j >= ids.length) return;
-    [ids[i], ids[j]] = [ids[j], ids[i]];
+  const commitOrder = useCallback(async (ids: string[]) => {
     const ok = await run(() => api.post(`${base}/reorder`, { ids }));
     if (ok) { await refreshTaxonomy(); touch(); }
-  }
+  }, [base, run, refreshTaxonomy, touch]);
+
+  const { order, draggingId, registerRow, rowHandlers, rowStyle, moveBy } =
+    useDragReorder(rows.map((r) => r.id), commitOrder);
+
+  // La liste suit l'ordre affiché par le glissement, pas celui du serveur.
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  const ordered = order.map((id) => byId.get(id)).filter(Boolean) as typeof rows;
 
   return (
     <Screen>
@@ -58,40 +61,65 @@ export function Manage() {
         </Title>
       </div>
 
-      <Card style={{ marginTop: 18 }}>
-        {rows.map((r, i, arr) => (
-          <div
-            key={r.id}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 11, padding: '13px 14px',
-              borderBottom: i === arr.length - 1 ? 'none' : '1px solid var(--line)',
-            }}
-          >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 'none' }}>
-              <ArrowButton disabled={i === 0} onClick={() => move(r.id, -1)}>▴</ArrowButton>
-              <ArrowButton disabled={i === arr.length - 1} onClick={() => move(r.id, 1)}>▾</ArrowButton>
+      <Card style={{ marginTop: 18, overflow: draggingId ? 'visible' : 'hidden' }}>
+        {ordered.map((r, i, arr) => {
+          const dragging = draggingId === r.id;
+          return (
+            <div
+              key={r.id}
+              ref={registerRow(r.id)}
+              {...rowHandlers(r.id, i)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 11, padding: '13px 14px',
+                borderBottom: i === arr.length - 1 || dragging ? 'none' : '1px solid var(--line)',
+                // pan-y laisse défiler la liste ; l'appui long, lui, ne bouge pas.
+                touchAction: 'pan-y',
+                WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none',
+                ...rowStyle(r.id, i),
+              }}
+            >
+              <button
+                type="button"
+                aria-label={`Réordonner ${r.name} — appui long pour glisser, flèches haut et bas au clavier`}
+                onKeyDown={(e) => {
+                  if (e.key === 'ArrowUp') { e.preventDefault(); moveBy(r.id, -1); }
+                  if (e.key === 'ArrowDown') { e.preventDefault(); moveBy(r.id, 1); }
+                }}
+                style={{
+                  display: 'flex', flexDirection: 'column', gap: 3.5, flex: 'none',
+                  background: 'none', border: 'none', padding: '8px 4px',
+                  opacity: dragging ? 1 : .35, cursor: 'grab', touchAction: 'none',
+                }}
+              >
+                {[0, 1, 2].map((k) => (
+                  <span key={k} style={{ width: 15, height: 1.5, background: '#fff', display: 'block' }} />
+                ))}
+              </button>
+              <span style={{ width: 10, height: 10, borderRadius: 3, flex: 'none', background: r.tone }} />
+              <span className="ellipsis" style={{ flex: 1, fontSize: 16.5 }}>{r.name}</span>
+              <span className="mono" style={{ fontSize: 14, fontWeight: 500, color: 'rgba(235,235,245,.4)' }}>{r.count}</span>
+              <button
+                type="button"
+                onClick={() => { setEditing(r.id); setName(r.name); setTone(r.tone); }}
+                style={{ background: 'none', border: 'none', font: '600 13px/1 var(--sans)', color: 'var(--accent)', padding: '6px 6px' }}
+              >
+                Modifier
+              </button>
+              <button
+                type="button"
+                onClick={() => setRemoving(r)}
+                aria-label={`Supprimer ${r.name}`}
+                style={{ background: 'none', border: 'none', color: 'var(--fg-4)', fontSize: 17, padding: '6px 4px' }}
+              >
+                ×
+              </button>
             </div>
-            <span style={{ width: 10, height: 10, borderRadius: 3, flex: 'none', background: r.tone }} />
-            <span className="ellipsis" style={{ flex: 1, fontSize: 16.5 }}>{r.name}</span>
-            <span className="mono" style={{ fontSize: 14, fontWeight: 500, color: 'rgba(235,235,245,.4)' }}>{r.count}</span>
-            <button
-              type="button"
-              onClick={() => { setEditing(r.id); setName(r.name); setTone(r.tone); }}
-              style={{ background: 'none', border: 'none', font: '600 13px/1 var(--sans)', color: 'var(--accent)', padding: '6px 6px' }}
-            >
-              Modifier
-            </button>
-            <button
-              type="button"
-              onClick={() => setRemoving(r)}
-              aria-label={`Supprimer ${r.name}`}
-              style={{ background: 'none', border: 'none', color: 'var(--fg-4)', fontSize: 17, padding: '6px 4px' }}
-            >
-              ×
-            </button>
-          </div>
-        ))}
+          );
+        })}
       </Card>
+      <div style={{ fontSize: 12.5, lineHeight: 1.5, color: 'var(--fg-4)', margin: '10px 2px 0' }}>
+        Appui long sur une ligne pour la déplacer.
+      </div>
 
       {editing ? (
         <Card style={{ marginTop: 12, padding: 16 }}>
@@ -158,21 +186,5 @@ export function Manage() {
         }}
       />
     </Screen>
-  );
-}
-
-function ArrowButton({ children, onClick, disabled }: { children: string; onClick: () => void; disabled?: boolean }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      style={{
-        width: 22, height: 16, borderRadius: 5, border: 'none', background: 'rgba(255,255,255,.07)',
-        color: 'var(--fg-3)', fontSize: 10, lineHeight: 1, opacity: disabled ? .3 : 1, padding: 0,
-      }}
-    >
-      {children}
-    </button>
   );
 }

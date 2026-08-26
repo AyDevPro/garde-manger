@@ -151,7 +151,8 @@ export function ProductDetail() {
             setDraft({
               productId: item.productId, batchId: item.id, name: item.name, brand: item.brand,
               barcode: item.barcode, imageUrl: item.imageUrl, packageText: item.packageText,
-              categoryId: item.categoryId, locationId: item.locationId, qty: item.qty, unit: item.unit,
+              categoryId: item.categoryId, locationId: item.locationId,
+              qty: Math.max(1, item.qty), unit: item.unit,
               dateType: item.dateType, bestBefore: item.bestBefore, lotCode: item.lotCode,
               daysAfterOpening: item.daysAfterOpening, isMedicine: item.isMedicine,
               dosage: item.dosage, medForm: item.medForm, notes: item.notes,
