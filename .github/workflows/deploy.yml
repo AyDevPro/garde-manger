@@ -1,0 +1,53 @@
+name: Deploy to Production
+
+# Push-to-deploy : tout push sur la branche `prod` redéploie sur le VPS aydev.
+# Secrets requis (repo › Settings › Secrets and variables › Actions) — identiques
+# aux autres apps : VPS_HOST, VPS_USER, VPS_SSH_KEY.
+on:
+  push:
+    branches:
+      - prod
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            cd /root/aydev/garde-manger
+
+            # Récupère la dernière version de la branche prod
+            git fetch origin prod
+            git reset --hard origin/prod
+
+            # Rebuild + redémarrage (les migrations SQL sont appliquées
+            # automatiquement au démarrage de l'app).
+            docker compose up -d --build
+
+            # Attend que le healthcheck de l'app passe (max ~60 s)
+            echo "Attente du healthcheck..."
+            for i in $(seq 1 30); do
+              if docker exec garde-manger-app node -e "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"; then
+                echo "App healthy"
+                break
+              fi
+              if [ "$i" = "30" ]; then
+                echo "App non saine après 60 s — logs :"
+                docker logs garde-manger-app --tail 40
+                exit 1
+              fi
+              sleep 2
+            done
+
+            # Nettoyage images/cache (garde ~2 Go de cache de build)
+            docker image prune -f
+            docker builder prune -f --keep-storage 2GB
+
+            echo "Déploiement terminé !"
