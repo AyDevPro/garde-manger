@@ -29,6 +29,25 @@ export function frToday() {
   return `${jour[0].toUpperCase()}${jour.slice(1)} ${d.getDate()} ${MOIS_LONG[d.getMonth()]}`;
 }
 
+/** Jours restants avant une date, du point de vue de l'appareil. */
+export function daysUntil(iso: string | null): number | null {
+  if (!iso) return null;
+  const [y, m, d] = iso.split('-').map(Number);
+  const target = new Date(y, m - 1, d).setHours(0, 0, 0, 0);
+  const today = new Date().setHours(0, 0, 0, 0);
+  return Math.round((target - today) / 86_400_000);
+}
+
+/** Le même découpage que le serveur, pour recalculer hors ligne. */
+export function urgencyOf(daysLeft: number | null): Urgency {
+  if (daysLeft === null) return 'nodate';
+  if (daysLeft < 0) return 'expired';
+  if (daysLeft === 0) return 'today';
+  if (daysLeft <= 3) return 'next3';
+  if (daysLeft <= 7) return 'week';
+  return 'later';
+}
+
 export const URGENCY_COLOR: Record<Urgency, string> = {
   expired: 'var(--red)',
   today: 'var(--red)',

@@ -76,14 +76,16 @@ miscRouter.get('/shopping', wrap(async (req, res) => {
 
 miscRouter.post('/shopping', wrap(async (req, res) => {
   const b = parse(z.object({
+    id: z.string().uuid().optional(),
     label: z.string().trim().min(1, 'libellé requis').max(120),
     qty: z.number().min(0).max(999).optional(),
     productId: z.string().uuid().nullable().optional(),
   }), req.body);
   const row = await one(
-    `INSERT INTO shopping_item (household_id, label, qty, product_id) VALUES ($1,$2,$3,$4)
+    `INSERT INTO shopping_item (id, household_id, label, qty, product_id)
+     VALUES (COALESCE($1, gen_random_uuid()),$2,$3,$4,$5)
      RETURNING id, label, qty, product_id`,
-    [req.session!.household_id, b.label, b.qty ?? 1, b.productId ?? null],
+    [b.id ?? null, req.session!.household_id, b.label, b.qty ?? 1, b.productId ?? null],
   );
   res.status(201).json({ id: row!.id, label: row!.label, qty: Number(row!.qty), productId: row!.product_id, checked: false });
 }));

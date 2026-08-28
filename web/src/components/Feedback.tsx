@@ -1,30 +1,65 @@
 import { useStore } from '../store';
 
-/** Bandeau hors ligne, en haut de l'écran. */
+/**
+ * Bandeau d'état réseau. Tant qu'il reste des écritures en file, il indique
+ * combien et propose de réessayer : rien n'est perdu, c'est juste en attente.
+ */
 export function NetBanner() {
-  const { netError, setNetError } = useStore();
-  if (!netError) return null;
+  const { netError, setNetError, pendingCount, syncing } = useStore();
+  if (!netError && !pendingCount) return null;
+
+  const waiting = pendingCount > 0;
+  const tone = waiting ? 'var(--orange)' : 'var(--red)';
+  const message = waiting
+    ? `${pendingCount} modification${pendingCount > 1 ? 's' : ''} en attente d’envoi`
+    : netError;
+
   return (
     <div
       role="status"
       style={{
         position: 'fixed', top: `calc(var(--safe-top) + 8px)`, left: 14, right: 14, zIndex: 80,
         maxWidth: 520, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 11,
-        padding: '12px 15px', borderRadius: 17, background: 'rgba(255,69,58,.16)',
-        border: '1px solid rgba(255,69,58,.4)', backdropFilter: 'blur(14px)',
-        WebkitBackdropFilter: 'blur(14px)', animation: 'rise .25s ease',
+        padding: '12px 15px', borderRadius: 17,
+        background: waiting ? 'rgba(255,159,10,.16)' : 'rgba(255,69,58,.16)',
+        border: `1px solid ${waiting ? 'rgba(255,159,10,.4)' : 'rgba(255,69,58,.4)'}`,
+        backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', animation: 'rise .25s ease',
       }}
     >
-      <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--red)', flex: 'none', animation: 'pulse 1.4s infinite' }} />
-      <span style={{ flex: 1, fontSize: 13, lineHeight: 1.35 }}>{netError}</span>
+      <span style={{ width: 8, height: 8, borderRadius: '50%', background: tone, flex: 'none', animation: 'pulse 1.4s infinite' }} />
+      <span style={{ flex: 1, fontSize: 13, lineHeight: 1.35 }}>{message}</span>
+      <BannerAction waiting={waiting} syncing={syncing} tone={tone} onDismiss={() => setNetError(null)} />
+    </div>
+  );
+}
+
+function BannerAction({
+  waiting, syncing, tone, onDismiss,
+}: { waiting: boolean; syncing: boolean; tone: string; onDismiss: () => void }) {
+  const { sync } = useStore();
+  if (!waiting) {
+    return (
       <button
         type="button"
-        onClick={() => setNetError(null)}
-        style={{ background: 'none', border: 'none', font: '600 12.5px/1 var(--sans)', color: 'var(--red)', padding: '6px 8px' }}
+        onClick={onDismiss}
+        style={{ background: 'none', border: 'none', font: '600 12.5px/1 var(--sans)', color: tone, padding: '6px 8px' }}
       >
         OK
       </button>
-    </div>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => sync()}
+      disabled={syncing}
+      style={{
+        background: 'none', border: 'none', font: '600 12.5px/1 var(--sans)',
+        color: tone, padding: '6px 8px', opacity: syncing ? .5 : 1,
+      }}
+    >
+      {syncing ? 'Envoi…' : 'Réessayer'}
+    </button>
   );
 }
 

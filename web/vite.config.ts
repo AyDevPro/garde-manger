@@ -29,7 +29,11 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // Hors ligne, toute navigation retombe sur la coquille de l'app ; les
+        // données, elles, viennent d'IndexedDB (voir src/lib/offline.ts).
+        navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api/, /^\/uploads/],
+        cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
             // Les photos produit : on garde ce qui a déjà été vu.

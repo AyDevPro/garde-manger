@@ -42,65 +42,83 @@ export function useResource<T>(path: string | null, deps: unknown[] = []) {
 }
 
 /**
- * Les gestes rapides du stock. Chacun confirme par un bandeau et propose
- * « Annuler » : c'est ce qui rend le −1 consommé sans risque.
+ * Les gestes rapides du stock. Chacun est calculé localement puis envoyé : si
+ * le réseau manque, l'écriture part en file et l'écran affiche déjà le résultat.
+ * « Annuler » empile l'action inverse, qui suivra le même chemin.
  */
 export function useStockActions(onDepleted?: (item: StockItem) => void) {
-  const { run, touch, showToast } = useStore();
+  const { run, touch, showToast, refreshPending, locations } = useStore();
+
+  const after = useCallback(async () => {
+    touch();
+    await refreshPending();
+  }, [touch, refreshPending]);
 
   const consume = useCallback(async (item: StockItem, qty = 1) => {
-    const before = item.qty;
-    const r = await run(() => api.post<{ item: StockItem; depleted: boolean; productName: string }>(
-      `/batches/${item.id}/consume`, { qty },
+    const rest = Math.max(0, Number((item.qty - qty).toFixed(2)));
+    const ok = await run(() => api.queued(
+      'POST', `/batches/${item.id}/consume`, { qty },
+      { kind: 'consume', batchId: item.id, qty },
     ));
-    if (!r) return;
-    touch();
-    if (r.depleted) onDepleted?.(r.item);
-    else {
-      showToast(`−${qty} ${r.productName} · reste ${r.item.qty} ${r.item.unit}`, async () => {
-        await run(() => api.patch(`/batches/${item.id}`, { qty: before }));
-        touch();
-      });
-    }
-  }, [run, touch, showToast, onDepleted]);
+    if (!ok) return;
+    await after();
+    if (rest === 0) { onDepleted?.({ ...item, qty: 0 }); return; }
+    showToast(`−${qty} ${item.name} · reste ${rest} ${item.unit}`, async () => {
+      await run(() => api.queued(
+        'PATCH', `/batches/${item.id}`, { qty: item.qty },
+        { kind: 'patchBatch', batchId: item.id, fields: { qty: item.qty } },
+      ));
+      await after();
+    });
+  }, [run, after, showToast, onDepleted]);
 
   const close = useCallback(async (item: StockItem, reason: 'consumed' | 'trashed') => {
-    const before = item.qty;
-    const r = await run(() => api.post<{ productName: string }>(`/batches/${item.id}/close`, { reason }));
-    if (!r) return;
-    touch();
+    const ok = await run(() => api.queued(
+      'POST', `/batches/${item.id}/close`, { reason },
+      { kind: 'close', batchId: item.id, reason },
+    ));
+    if (!ok) return;
+    await after();
     showToast(
-      reason === 'trashed' ? `${r.productName} jeté · retiré du stock` : `${r.productName} terminé`,
+      reason === 'trashed' ? `${item.name} jeté · retiré du stock` : `${item.name} terminé`,
       async () => {
-        await run(() => api.post(`/batches/${item.id}/reopen`, { qty: before }));
-        touch();
+        await run(() => api.queued(
+          'POST', `/batches/${item.id}/reopen`, { qty: item.qty },
+          { kind: 'reopen', item },
+        ));
+        await after();
       },
     );
-  }, [run, touch, showToast]);
+  }, [run, after, showToast]);
 
   const move = useCallback(async (item: StockItem, locationId: string | null) => {
-    const from = item.locationId;
-    const r = await run(() => api.post<{ destination: string | null }>(`/batches/${item.id}/move`, { locationId }));
-    if (!r) return;
-    touch();
-    showToast(`${item.name} déplacé vers ${r.destination ?? 'aucun emplacement'}`, async () => {
-      await run(() => api.post(`/batches/${item.id}/move`, { locationId: from }));
-      touch();
+    const destination = locations.find((l) => l.id === locationId);
+    const ok = await run(() => api.queued(
+      'POST', `/batches/${item.id}/move`, { locationId },
+      { kind: 'move', batchId: item.id, locationId, locationName: destination?.name ?? 'Sans emplacement' },
+    ));
+    if (!ok) return;
+    await after();
+    showToast(`${item.name} déplacé vers ${destination?.name ?? 'aucun emplacement'}`, async () => {
+      await run(() => api.queued(
+        'POST', `/batches/${item.id}/move`, { locationId: item.locationId },
+        { kind: 'move', batchId: item.id, locationId: item.locationId, locationName: item.locationName },
+      ));
+      await after();
     });
-  }, [run, touch, showToast]);
+  }, [run, after, showToast, locations]);
 
-  const setOpened = useCallback(async (item: StockItem, openedAt: string | null, daysAfterOpening?: number | null) => {
-    const r = await run(() => api.post<StockItem>(`/batches/${item.id}/open`, { openedAt, daysAfterOpening }));
-    if (!r) return;
-    touch();
-    showToast(
-      openedAt
-        ? r.dateFromOpening
-          ? `Ouvert · à consommer avant le ${r.effectiveDate}`
-          : `${item.name} marqué comme ouvert`
-        : 'Ouverture annulée',
-    );
-  }, [run, touch, showToast]);
+  const setOpened = useCallback(async (
+    item: StockItem, openedAt: string | null, daysAfterOpening?: number | null,
+  ) => {
+    const ok = await run(() => api.queued(
+      'POST', `/batches/${item.id}/open`, { openedAt, daysAfterOpening },
+      { kind: 'open', batchId: item.id, openedAt },
+    ));
+    if (!ok) return;
+    await after();
+    showToast(openedAt ? `${item.name} marqué comme ouvert` : 'Ouverture annulée');
+  }, [run, after, showToast]);
 
   return { consume, close, move, setOpened };
 }

@@ -17,7 +17,7 @@ export function ProductDetail() {
   const { id } = useParams<{ id: string }>();
   const nav = useNavigate();
   const goBack = useGoBack('/stock');
-  const { setDraft, run, touch, showToast } = useStore();
+  const { setDraft, run, touch, showToast, refreshPending } = useStore();
   const [zero, setZero] = useState<StockItem | null>(null);
   const [sheet, setSheet] = useState<'delete' | 'move' | 'trash' | null>(null);
 
@@ -66,8 +66,15 @@ export function ProductDetail() {
           </button>
           <button
             type="button"
-            onClick={() => run(() => api.patch(`/products/${item.productId}`, { isFavorite: !item.isFavorite }))
-              .then((ok) => { if (ok) { touch(); showToast(item.isFavorite ? 'Retiré des favoris' : 'Ajouté aux favoris'); } })}
+            onClick={async () => {
+              const fields = { isFavorite: !item.isFavorite };
+              const ok = await run(() => api.queued('PATCH', `/products/${item.productId}`, fields,
+                { kind: 'patchProduct', productId: item.productId, fields }));
+              if (!ok) return;
+              touch();
+              await refreshPending();
+              showToast(item.isFavorite ? 'Retiré des favoris' : 'Ajouté aux favoris');
+            }}
             aria-label={item.isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
             style={{
               width: 40, height: 40, borderRadius: '50%', background: 'rgba(0,0,0,.28)', border: 'none',
@@ -225,8 +232,13 @@ export function ProductDetail() {
         text="La fiche et tous ses lots seront retirés du stock pour tout le foyer."
         confirmLabel="Supprimer"
         onConfirm={async () => {
-          const ok = await run(() => api.del(`/products/${item.productId}`));
-          if (ok) { touch(); showToast(`${item.name} retiré du stock`); nav('/stock'); }
+          const ok = await run(() => api.queued('DELETE', `/products/${item.productId}`, undefined,
+            { kind: 'deleteProduct', productId: item.productId }));
+          if (!ok) return;
+          touch();
+          await refreshPending();
+          showToast(`${item.name} retiré du stock`);
+          nav('/stock');
         }}
       />
     </Screen>

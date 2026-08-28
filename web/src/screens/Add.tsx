@@ -4,9 +4,9 @@ import { Card, Chip, Eyebrow, Row, Spinner, Thumb } from '../components/ui';
 import { Switch } from './Detail';
 import { useResource } from '../hooks';
 import { api } from '../lib/api';
-import { DATE_TYPE_LABEL, addDaysIso, frDate, todayIso } from '../lib/format';
+import { DATE_TYPE_LABEL, addDaysIso, daysUntil, frDate, todayIso, urgencyOf } from '../lib/format';
 import { useStore } from '../store';
-import type { DateType, Draft, RecentProduct } from '../types';
+import type { DateType, Draft, RecentProduct, StockItem } from '../types';
 
 const DATE_TYPES: DateType[] = ['DLC', 'DDM', 'EXP'];
 
@@ -19,7 +19,7 @@ const emptyDraft = (locationId: string | null): Draft => ({
 
 export function AddProduct() {
   const nav = useNavigate();
-  const { draft, setDraft, locations, categories, run, touch, showToast } = useStore();
+  const { draft, setDraft, locations, categories, run, touch, showToast, refreshPending } = useStore();
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -66,51 +66,63 @@ export function AddProduct() {
 
   async function save() {
     if (saving) return;
-    const name = draft!.name.trim();
+    const d = draft!;
+    const name = d.name.trim();
     if (!name) { showToast('Donnez un nom au produit'); return; }
     setSaving(true);
 
     const productFields = {
       name,
-      brand: draft!.brand || null,
-      barcode: draft!.barcode || null,
-      categoryId: draft!.categoryId,
-      imageUrl: draft!.imageUrl,
-      packageText: draft!.packageText,
-      defaultUnit: draft!.unit,
-      isMedicine: draft!.isMedicine,
-      dosage: draft!.dosage,
-      medForm: draft!.medForm,
-      daysAfterOpening: draft!.daysAfterOpening,
-      notes: draft!.notes,
+      brand: d.brand || null,
+      barcode: d.barcode || null,
+      categoryId: d.categoryId,
+      imageUrl: d.imageUrl,
+      packageText: d.packageText,
+      defaultUnit: d.unit,
+      isMedicine: d.isMedicine,
+      dosage: d.dosage,
+      medForm: d.medForm,
+      daysAfterOpening: d.daysAfterOpening,
+      notes: d.notes,
     };
     const batchFields = {
-      locationId: draft!.locationId,
-      qty: draft!.qty,
-      unit: draft!.unit,
-      dateType: draft!.dateType,
-      bestBefore: draft!.dateType === 'NONE' ? null : draft!.bestBefore,
-      lotCode: draft!.lotCode,
+      locationId: d.locationId,
+      qty: d.qty,
+      unit: d.unit,
+      dateType: d.dateType,
+      bestBefore: d.dateType === 'NONE' ? null : d.bestBefore,
+      lotCode: d.lotCode,
     };
 
     let ok: unknown;
-    if (draft!.batchId && draft!.productId) {
+    if (d.batchId && d.productId) {
       ok = await run(async () => {
-        await api.patch(`/products/${draft!.productId}`, productFields);
-        return api.patch(`/batches/${draft!.batchId}`, batchFields);
+        await api.queued('PATCH', `/products/${d.productId}`, productFields,
+          { kind: 'patchProduct', productId: d.productId!, fields: productFields });
+        return api.queued('PATCH', `/batches/${d.batchId}`, batchFields,
+          { kind: 'patchBatch', batchId: d.batchId!, fields: batchFields });
       });
-    } else if (draft!.productId) {
-      ok = await run(() => api.post('/batches', { productId: draft!.productId, ...batchFields }));
     } else {
-      ok = await run(() => api.post('/products', { ...productFields, batch: batchFields }));
+      // Les identifiants sont tirés ici : un produit créé hors ligne doit être
+      // désignable avant même d'avoir atteint le serveur.
+      const productId = d.productId ?? crypto.randomUUID();
+      const batchId = crypto.randomUUID();
+      const item = synthesize({ ...d, name }, productId, batchId, locations, categories);
+      ok = d.productId
+        ? await run(() => api.queued('POST', '/batches', { id: batchId, productId, ...batchFields },
+            { kind: 'createBatch', item }))
+        : await run(() => api.queued('POST', '/products',
+            { id: productId, ...productFields, batch: { id: batchId, ...batchFields } },
+            { kind: 'createBatch', item }));
     }
     setSaving(false);
     if (!ok) return;
 
     touch();
-    const where = locations.find((l) => l.id === draft!.locationId)?.name;
-    showToast(draft!.batchId ? `${name} mis à jour` : `${name} rangé au ${where ?? 'stock'}`);
-    const wasEdit = Boolean(draft!.batchId);
+    await refreshPending();
+    const where = locations.find((l) => l.id === d.locationId)?.name;
+    showToast(d.batchId ? `${name} mis à jour` : `${name} rangé au ${where ?? 'stock'}`);
+    const wasEdit = Boolean(d.batchId);
     setDraft(null);
     if (wasEdit) nav(-1);
     else nav('/');
@@ -407,4 +419,31 @@ async function shrinkImage(file: File, max = 1000): Promise<string> {
   canvas.getContext('2d')!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
   bitmap.close();
   return canvas.toDataURL('image/jpeg', 0.82);
+}
+
+/** Reconstitue la ligne de stock d'un produit tout juste enregistré. */
+function synthesize(
+  d: Draft, productId: string, batchId: string,
+  locations: { id: string; name: string; tone: string; kind: string }[],
+  categories: { id: string; name: string; tone: string }[],
+): StockItem {
+  const loc = locations.find((l) => l.id === d.locationId);
+  const cat = categories.find((c) => c.id === d.categoryId);
+  const bestBefore = d.dateType === 'NONE' ? null : d.bestBefore;
+  const daysLeft = daysUntil(bestBefore);
+  return {
+    id: batchId, productId, name: d.name, brand: d.brand, barcode: d.barcode,
+    imageUrl: d.imageUrl, packageText: d.packageText,
+    qty: d.qty, unit: d.unit, dateType: d.dateType,
+    bestBefore, effectiveDate: bestBefore, dateFromOpening: false,
+    daysLeft, urgency: urgencyOf(daysLeft),
+    openedAt: null, frozenAt: null, thawedAt: null,
+    daysAfterOpening: d.daysAfterOpening, lotCode: d.lotCode, status: 'active',
+    isMedicine: d.isMedicine, dosage: d.dosage, medForm: d.medForm, notes: d.notes,
+    isFavorite: false,
+    locationId: d.locationId, locationName: loc?.name ?? 'Sans emplacement',
+    locationTone: loc?.tone ?? '#8E8E93', locationKind: loc?.kind ?? 'autre',
+    categoryId: d.categoryId, categoryName: cat?.name ?? null, categoryTone: cat?.tone ?? '#8E8E93',
+    createdAt: new Date().toISOString(),
+  };
 }

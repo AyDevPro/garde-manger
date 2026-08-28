@@ -10,7 +10,7 @@ import type { StockItem } from '../types';
  * de courses. C'est le seul moment où l'app pose une question après un « −1 ».
  */
 export function ZeroSheet({ item, onClose }: { item: StockItem | null; onClose: () => void }) {
-  const { run, touch, showToast } = useStore();
+  const { run, touch, showToast, refreshPending } = useStore();
   const { close } = useStockActions();
   if (!item) return null;
 
@@ -34,8 +34,13 @@ export function ZeroSheet({ item, onClose }: { item: StockItem | null; onClose: 
         style={{ marginTop: 10, fontSize: 15 }}
         onClick={async () => {
           onClose();
-          const ok = await run(() => api.post('/shopping', { label: item.name, productId: item.productId, qty: 1 }));
-          if (ok) { touch(); showToast(`${item.name} ajouté à la liste de courses`); }
+          const entry = { id: crypto.randomUUID(), label: item.name, productId: item.productId, qty: 1 };
+          const ok = await run(() => api.queued('POST', '/shopping', entry,
+            { kind: 'shoppingAdd', item: { ...entry, checked: false } }));
+          if (!ok) return;
+          touch();
+          await refreshPending();
+          showToast(`${item.name} ajouté à la liste de courses`);
         }}
       >
         Ajouter à la liste de courses

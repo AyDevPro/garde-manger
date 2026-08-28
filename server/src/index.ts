@@ -8,6 +8,7 @@ import { config } from './config.js';
 import { bootstrapHousehold, requireAuth } from './auth.js';
 import { migrate, pool, waitForDb } from './db.js';
 import { HttpError } from './lib/http.js';
+import { idempotency, startIdempotencyCleanup } from './lib/idempotency.js';
 import { authRouter } from './routes/auth.js';
 import { dashboardRouter } from './routes/dashboard.js';
 import { lookupRouter } from './routes/lookup.js';
@@ -70,7 +71,7 @@ app.get('/api/health', async (_req, res) => {
 
 app.use('/api/auth', authRouter);
 // Tout le reste de l'API exige une session du foyer.
-app.use('/api', requireAuth, dashboardRouter, stockRouter, taxonomyRouter, lookupRouter, miscRouter);
+app.use('/api', requireAuth, idempotency, dashboardRouter, stockRouter, taxonomyRouter, lookupRouter, miscRouter);
 
 app.use('/uploads', express.static(config.uploadsDir, { maxAge: '30d', fallthrough: true, index: false }));
 
@@ -101,6 +102,7 @@ async function main() {
   await waitForDb();
   await migrate();
   await bootstrapHousehold();
+  startIdempotencyCleanup();
   app.listen(config.port, () => {
     console.log(`[garde-manger] à l'écoute sur http://0.0.0.0:${config.port}`);
   });

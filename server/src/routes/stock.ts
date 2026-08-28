@@ -11,6 +11,7 @@ const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'date attendue au format
 const dateType = z.enum(['DLC', 'DDM', 'EXP', 'NONE']);
 
 const batchInput = z.object({
+  id: z.string().uuid().optional(),
   locationId: z.string().uuid().nullable().optional(),
   qty: z.number().min(0).max(9999).optional(),
   unit: z.string().trim().max(40).optional(),
@@ -22,6 +23,7 @@ const batchInput = z.object({
 });
 
 const productInput = z.object({
+  id: z.string().uuid().optional(),
   name: z.string().trim().min(1, 'le nom est requis').max(200),
   brand: z.string().trim().max(120).nullable().optional(),
   barcode: z.string().trim().regex(/^[0-9]{6,14}$/, 'code-barres invalide').nullable().optional(),
@@ -121,10 +123,11 @@ stockRouter.post('/products', wrap(async (req, res) => {
 
     if (!product) {
       product = (await c.query(
-        `INSERT INTO product (household_id, name, brand, barcode, category_id, image_url, package_text,
+        `INSERT INTO product (id, household_id, name, brand, barcode, category_id, image_url, package_text,
                               default_unit, is_medicine, dosage, med_form, days_after_opening, notes, is_favorite)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *`,
-        [hid, body.name, body.brand ?? null, body.barcode ?? null, body.categoryId ?? null,
+         VALUES (COALESCE($1, gen_random_uuid()),$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+         RETURNING *`,
+        [body.id ?? null, hid, body.name, body.brand ?? null, body.barcode ?? null, body.categoryId ?? null,
          body.imageUrl ?? null, body.packageText ?? null, body.defaultUnit ?? 'unités',
          body.isMedicine ?? false, body.dosage ?? null, body.medForm ?? null,
          body.daysAfterOpening ?? null, body.notes ?? null, body.isFavorite ?? false],
@@ -133,10 +136,10 @@ stockRouter.post('/products', wrap(async (req, res) => {
 
     const b = body.batch ?? {};
     const batch = (await c.query(
-      `INSERT INTO batch (household_id, product_id, location_id, qty, unit, date_type, best_before,
+      `INSERT INTO batch (id, household_id, product_id, location_id, qty, unit, date_type, best_before,
                           lot_code, opened_at, frozen_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`,
-      [hid, product.id, b.locationId ?? null, b.qty ?? 1, b.unit ?? product.default_unit,
+       VALUES (COALESCE($1, gen_random_uuid()),$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`,
+      [b.id ?? null, hid, product.id, b.locationId ?? null, b.qty ?? 1, b.unit ?? product.default_unit,
        b.dateType ?? (b.bestBefore ? 'DLC' : 'NONE'), b.bestBefore ?? null,
        b.lotCode ?? null, b.openedAt ?? null, b.frozenAt ?? null],
     )).rows[0];
@@ -210,10 +213,10 @@ stockRouter.post('/batches', wrap(async (req, res) => {
     [body.productId, hid]);
   if (!product) throw notFound('Produit introuvable');
   const row = await one(
-    `INSERT INTO batch (household_id, product_id, location_id, qty, unit, date_type, best_before,
+    `INSERT INTO batch (id, household_id, product_id, location_id, qty, unit, date_type, best_before,
                         lot_code, opened_at, frozen_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`,
-    [hid, product.id, body.locationId ?? null, body.qty ?? 1, body.unit ?? product.default_unit,
+     VALUES (COALESCE($1, gen_random_uuid()),$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`,
+    [body.id ?? null, hid, product.id, body.locationId ?? null, body.qty ?? 1, body.unit ?? product.default_unit,
      body.dateType ?? (body.bestBefore ? 'DLC' : 'NONE'), body.bestBefore ?? null,
      body.lotCode ?? null, body.openedAt ?? null, body.frozenAt ?? null],
   );

@@ -244,8 +244,34 @@ Volontairement laissé de côté pour l'instant, dans l'ordre où ça vaudra le 
 - **OCR automatique des dates** — l'écran existe et la détection dans le texte
   fonctionne ; il manque la reconnaissance dans l'image.
 - **Décongélation guidée** — proposer une nouvelle échéance à la sortie du congélateur.
-- **File d'attente hors ligne** — aujourd'hui l'app prévient qu'elle est hors ligne
-  et les écritures sont à refaire ; elles pourraient être rejouées à la reconnexion.
+- **Fusion plus fine des conflits** — aujourd'hui le dernier écrivain gagne au
+  niveau de la fiche entière, pas du champ.
+---
+
+## Hors ligne
+
+L'app fonctionne sans réseau — dans une cave, un cellier, un magasin.
+
+**Ce qui est lu** vient du dernier état connu, conservé dans IndexedDB. L'app
+s'ouvre et se navigue normalement, avec un bandeau qui dit ce qu'il en est.
+
+**Ce qui est écrit** part dans une file d'attente locale et l'écran affiche
+immédiatement le résultat : un « −1 consommé » se voit tout de suite, même si
+rien n'a quitté le téléphone. Chaque écriture porte une clé d'idempotence, donc
+un rejeu ne peut pas la produire deux fois. La file repart au retour du réseau,
+au retour sur l'app, ou d'un appui sur « Réessayer », **dans l'ordre où les
+actions ont été faites**.
+
+Fonctionnent hors ligne : ajouter un produit (l'identifiant est tiré par le
+téléphone), consommer, jeter, ouvrir, déplacer, modifier, supprimer, et toute la
+liste de courses. Exigent le réseau : la connexion, le changement de mot de
+passe, l'envoi d'une photo et la recherche d'un code-barres inconnu.
+
+**Conflits.** Deux téléphones qui modifient la même fiche appliquent le dernier
+arrivé ; les quantités ne descendent jamais sous zéro. Si le serveur refuse
+définitivement une écriture — le lot a été supprimé ailleurs — elle est
+abandonnée et le bandeau le dit. Une session expirée suspend le rejeu sans rien
+perdre : tout repart après reconnexion.
 
 ---
 

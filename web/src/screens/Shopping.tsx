@@ -8,7 +8,7 @@ type Item = { id: string; label: string; qty: number; productId: string | null; 
 
 /** Ce qui est tombé à zéro atterrit ici, et tout ajout manuel aussi. */
 export function Shopping() {
-  const { run, touch } = useStore();
+  const { run, touch, refreshPending } = useStore();
   const { data } = useResource<Item[]>('/shopping');
   const [label, setLabel] = useState('');
 
@@ -16,21 +16,29 @@ export function Shopping() {
   const todo = items.filter((i) => !i.checked);
   const done = items.filter((i) => i.checked);
 
+  const done_ = async () => { touch(); await refreshPending(); };
+
   const add = async () => {
     const l = label.trim();
     if (!l) return;
-    const ok = await run(() => api.post('/shopping', { label: l, qty: 1 }));
-    if (ok) { setLabel(''); touch(); }
+    const entry = { id: crypto.randomUUID(), label: l, qty: 1 };
+    const ok = await run(() => api.queued('POST', '/shopping', entry,
+      { kind: 'shoppingAdd', item: { ...entry, productId: null, checked: false } }));
+    if (!ok) return;
+    setLabel('');
+    await done_();
   };
 
   const toggle = async (item: Item) => {
-    const ok = await run(() => api.patch(`/shopping/${item.id}`, { checked: !item.checked }));
-    if (ok) touch();
+    const ok = await run(() => api.queued('PATCH', `/shopping/${item.id}`, { checked: !item.checked },
+      { kind: 'shoppingCheck', id: item.id, checked: !item.checked }));
+    if (ok) await done_();
   };
 
   const remove = async (item: Item) => {
-    const ok = await run(() => api.del(`/shopping/${item.id}`));
-    if (ok) touch();
+    const ok = await run(() => api.queued('DELETE', `/shopping/${item.id}`, undefined,
+      { kind: 'shoppingRemove', id: item.id }));
+    if (ok) await done_();
   };
 
   return (
