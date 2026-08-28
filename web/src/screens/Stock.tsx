@@ -47,7 +47,7 @@ export function Stock() {
     return `/stock?${sp}`;
   }, [query, bucket, locationId, categoryId, flag, sort]);
 
-  const { data, loading } = useResource<StockItem[]>(path);
+  const { data, loading, uncached } = useResource<StockItem[]>(path);
   const { consume } = useStockActions(setZero);
 
   const patch = (next: Record<string, string | null>) => {
@@ -192,13 +192,15 @@ export function Stock() {
           </>
         ) : (
           <Empty
-            title="Aucun produit ici"
-            hint={query ? `Aucun résultat pour « ${query} ».` : `Rien de rangé dans ${title.toLowerCase()} pour le moment.`}
-            action={
+            title={uncached ? 'Pas de copie hors ligne' : 'Aucun produit ici'}
+            hint={uncached
+              ? 'Cette vue n’a pas encore été chargée sur cet appareil. Elle s’affichera au retour du réseau.'
+              : query ? `Aucun résultat pour « ${query} ».` : `Rien de rangé dans ${title.toLowerCase()} pour le moment.`}
+            action={uncached ? undefined : (
               <Button variant="primary" onClick={() => nav('/scanner')} style={{ width: 'auto', display: 'inline-block', padding: '12px 20px', fontSize: 14 }}>
                 Scanner un produit
               </Button>
-            }
+            )}
           />
         )}
       </div>

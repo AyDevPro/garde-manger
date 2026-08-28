@@ -13,7 +13,7 @@ export function Screen({
         // d'onglets plutôt que de s'étirer sur tout l'écran.
         maxWidth: 560,
         marginInline: 'auto',
-        paddingTop: `calc(var(--safe-top) + 14px)`,
+        paddingTop: `calc(var(--safe-top) + var(--banner-h) + 14px)`,
         paddingLeft: pad ? 20 : 0,
         paddingRight: pad ? 20 : 0,
         paddingBottom: tabs ? `calc(var(--safe-bottom) + 122px)` : `calc(var(--safe-bottom) + 28px)`,

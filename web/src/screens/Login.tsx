@@ -29,7 +29,7 @@ export function Login() {
       onSubmit={submit}
       style={{
         height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center',
-        padding: `var(--safe-top) 26px calc(var(--safe-bottom) + 50px)`, maxWidth: 480, margin: '0 auto',
+        padding: `calc(var(--safe-top) + var(--banner-h)) 26px calc(var(--safe-bottom) + 50px)`, maxWidth: 480, margin: '0 auto',
       }}
     >
       <div

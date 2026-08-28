@@ -84,7 +84,7 @@ export function Scan() {
     <div style={{ height: '100%', background: '#0A0A0A', display: 'flex', flexDirection: 'column' }}>
       <div
         style={{
-          padding: `calc(var(--safe-top) + 14px) 18px 0`,
+          padding: `calc(var(--safe-top) + var(--banner-h) + 14px) 18px 0`,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
         }}
       >

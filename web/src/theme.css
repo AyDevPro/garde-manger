@@ -30,6 +30,8 @@
   /* Encoche et barre d'accueil iOS */
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  /* Place occupée par la pastille d'état réseau — 0 quand elle est absente. */
+  --banner-h: 0px;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }

@@ -1,65 +1,68 @@
+import { useEffect } from 'react';
 import { useStore } from '../store';
 
+/** Hauteur réservée en haut des écrans quand la pastille est là. */
+const BANNER_HEIGHT = 34;
+
 /**
- * Bandeau d'état réseau. Tant qu'il reste des écritures en file, il indique
- * combien et propose de réessayer : rien n'est perdu, c'est juste en attente.
+ * État du réseau, en une ligne. La pastille ne recouvre rien : elle réserve sa
+ * hauteur via `--banner-h`, dont les écrans tiennent compte dans leur marge
+ * haute. Sur un iPhone, deux lignes flottantes mangeaient les tuiles.
  */
 export function NetBanner() {
-  const { netError, setNetError, pendingCount, syncing } = useStore();
-  if (!netError && !pendingCount) return null;
-
+  const { netError, setNetError, pendingCount, syncing, sync } = useStore();
   const waiting = pendingCount > 0;
+  const visible = Boolean(netError) || waiting;
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty('--banner-h', visible ? `${BANNER_HEIGHT + 8}px` : '0px');
+    return () => root.style.setProperty('--banner-h', '0px');
+  }, [visible]);
+
+  if (!visible) return null;
+
   const tone = waiting ? 'var(--orange)' : 'var(--red)';
-  const message = waiting
-    ? `${pendingCount} modification${pendingCount > 1 ? 's' : ''} en attente d’envoi`
-    : netError;
+  const label = syncing
+    ? 'Envoi…'
+    : waiting
+      ? `${pendingCount} en attente`
+      : 'Hors ligne';
 
   return (
     <div
       role="status"
       style={{
-        position: 'fixed', top: `calc(var(--safe-top) + 8px)`, left: 14, right: 14, zIndex: 80,
-        maxWidth: 520, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 11,
-        padding: '12px 15px', borderRadius: 17,
-        background: waiting ? 'rgba(255,159,10,.16)' : 'rgba(255,69,58,.16)',
-        border: `1px solid ${waiting ? 'rgba(255,159,10,.4)' : 'rgba(255,69,58,.4)'}`,
-        backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', animation: 'rise .25s ease',
+        position: 'fixed', top: 'calc(var(--safe-top) + 6px)', left: 0, right: 0, zIndex: 80,
+        display: 'flex', justifyContent: 'center', pointerEvents: 'none',
       }}
     >
-      <span style={{ width: 8, height: 8, borderRadius: '50%', background: tone, flex: 'none', animation: 'pulse 1.4s infinite' }} />
-      <span style={{ flex: 1, fontSize: 13, lineHeight: 1.35 }}>{message}</span>
-      <BannerAction waiting={waiting} syncing={syncing} tone={tone} onDismiss={() => setNetError(null)} />
-    </div>
-  );
-}
-
-function BannerAction({
-  waiting, syncing, tone, onDismiss,
-}: { waiting: boolean; syncing: boolean; tone: string; onDismiss: () => void }) {
-  const { sync } = useStore();
-  if (!waiting) {
-    return (
       <button
         type="button"
-        onClick={onDismiss}
-        style={{ background: 'none', border: 'none', font: '600 12.5px/1 var(--sans)', color: tone, padding: '6px 8px' }}
+        onClick={() => (waiting ? sync() : setNetError(null))}
+        disabled={syncing}
+        style={{
+          pointerEvents: 'auto', display: 'flex', alignItems: 'center', gap: 8,
+          height: BANNER_HEIGHT, maxWidth: 'calc(100% - 28px)',
+          padding: '0 14px', borderRadius: 999, border: `1px solid ${tone}55`,
+          background: waiting ? 'rgba(255,159,10,.18)' : 'rgba(255,69,58,.18)',
+          backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
+          color: 'var(--fg)', font: '600 13px/1 var(--sans)', whiteSpace: 'nowrap',
+          animation: 'rise .22s ease',
+        }}
       >
-        OK
+        <span
+          style={{
+            width: 7, height: 7, borderRadius: '50%', background: tone, flex: 'none',
+            animation: syncing ? 'pulse .9s infinite' : 'pulse 1.8s infinite',
+          }}
+        />
+        <span className="ellipsis">{label}</span>
+        {waiting && !syncing && (
+          <span style={{ color: tone, fontWeight: 600 }}>· Envoyer</span>
+        )}
       </button>
-    );
-  }
-  return (
-    <button
-      type="button"
-      onClick={() => sync()}
-      disabled={syncing}
-      style={{
-        background: 'none', border: 'none', font: '600 12.5px/1 var(--sans)',
-        color: tone, padding: '6px 8px', opacity: syncing ? .5 : 1,
-      }}
-    >
-      {syncing ? 'Envoi…' : 'Réessayer'}
-    </button>
+    </div>
   );
 }
 

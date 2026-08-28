@@ -72,6 +72,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setToast(null);
   }, []);
 
+  /**
+   * Réchauffe le cache des écrans qu'on ouvrira sans réseau. Sans ça, le Stock
+   * reste vide hors ligne tant qu'on ne l'a pas visité en ligne au moins une fois.
+   */
+  const warmCache = useCallback(() => {
+    for (const path of ['/stock?sort=date', '/shopping', '/dashboard']) {
+      api.get(path).catch(() => {});
+    }
+  }, []);
+
   const refreshTaxonomy = useCallback(async () => {
     const [locs, cats] = await Promise.all([
       api.get<Location[]>('/locations'),
@@ -131,8 +141,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setAuth('in');
     await refreshTaxonomy();
     await sync();
+    warmCache();
     touch();
-  }, [refreshTaxonomy, sync, touch]);
+  }, [refreshTaxonomy, sync, warmCache, touch]);
 
   const signOut = useCallback(async (allDevices = false) => {
     await run(() => api.post(allDevices ? '/auth/logout-all' : '/auth/logout'));
@@ -164,6 +175,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           setAuth('in');
           await refreshTaxonomy();
           await sync();
+          warmCache();
         } else {
           forgetSession();
           setAuth('out');
@@ -185,11 +197,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }
     })();
     return () => { alive = false; };
-  }, [refreshTaxonomy, refreshPending, sync]);
+  }, [refreshTaxonomy, refreshPending, sync, warmCache]);
 
   // Le retour du réseau vide la file tout seul.
   useEffect(() => {
-    const online = () => { sync().then(() => setNetError(null)); };
+    const online = () => { sync().then(() => { setNetError(null); warmCache(); }); };
     const offline = () => setNetError('Hors ligne — les modifications partiront au retour du réseau.');
     window.addEventListener('online', online);
     window.addEventListener('offline', offline);
@@ -209,7 +221,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       window.removeEventListener('gm:stale', stale);
       window.removeEventListener('gm:fresh', fresh);
     };
-  }, [sync]);
+  }, [sync, warmCache]);
 
   const value = useMemo<Store>(() => ({
     auth, householdName, locations, categories, revision, draft, toast, netError,

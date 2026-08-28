@@ -95,7 +95,7 @@ export function DateScan() {
       className="scroll"
       style={{
         height: '100%', background: '#0A0A0A',
-        padding: `calc(var(--safe-top) + 14px) 22px calc(var(--safe-bottom) + 30px)`,
+        padding: `calc(var(--safe-top) + var(--banner-h) + 14px) 22px calc(var(--safe-bottom) + 30px)`,
         maxWidth: 520, margin: '0 auto',
       }}
     >

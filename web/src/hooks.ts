@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from './lib/api';
+import { NoDataError, api } from './lib/api';
 import { useStore } from './store';
 import type { StockItem } from './types';
 
@@ -23,13 +23,24 @@ export function useResource<T>(path: string | null, deps: unknown[] = []) {
   const { revision, run, auth } = useStore();
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
+  /** Vrai quand cet écran n'a jamais été chargé sur cet appareil. */
+  const [uncached, setUncached] = useState(false);
 
   useEffect(() => {
     if (path === null || auth !== 'in') return;
     const ac = new AbortController();
     let alive = true;
     setLoading(true);
-    run(() => api.get<T>(path, ac.signal)).then((d) => {
+    run(async () => {
+      try {
+        const d = await api.get<T>(path, ac.signal);
+        if (alive) setUncached(false);
+        return d;
+      } catch (err) {
+        if (alive && err instanceof NoDataError) setUncached(true);
+        throw err;
+      }
+    }).then((d) => {
       if (!alive) return;
       if (d !== undefined) setData(d);
       setLoading(false);
@@ -38,7 +49,7 @@ export function useResource<T>(path: string | null, deps: unknown[] = []) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [path, revision, auth, ...deps]);
 
-  return { data, loading, setData };
+  return { data, loading, uncached, setData };
 }
 
 /**

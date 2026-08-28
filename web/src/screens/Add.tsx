@@ -133,7 +133,7 @@ export function AddProduct() {
       className="scroll"
       style={{
         height: '100%',
-        padding: `calc(var(--safe-top) + 14px) 18px calc(var(--safe-bottom) + 40px)`,
+        padding: `calc(var(--safe-top) + var(--banner-h) + 14px) 18px calc(var(--safe-bottom) + 40px)`,
         maxWidth: 520, margin: '0 auto',
       }}
     >
