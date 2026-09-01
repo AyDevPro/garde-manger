@@ -39,12 +39,23 @@ export default defineConfig({
             // Les photos produit : on garde ce qui a déjà été vu.
             urlPattern: /^https:\/\/images\.openfoodfacts\.org\/.*/i,
             handler: 'CacheFirst',
-            options: { cacheName: 'off-images', expiration: { maxEntries: 300, maxAgeSeconds: 60 * 60 * 24 * 60 } },
+            options: {
+              cacheName: 'off-images',
+              expiration: { maxEntries: 300, maxAgeSeconds: 60 * 60 * 24 * 60 },
+              // Une image d'un autre domaine revient en réponse « opaque »
+              // (statut 0). Sans cette ligne elle n'est jamais mise en cache,
+              // donc jamais disponible hors ligne.
+              cacheableResponse: { statuses: [0, 200] },
+            },
           },
           {
             urlPattern: /\/uploads\/.*/i,
             handler: 'CacheFirst',
-            options: { cacheName: 'photos', expiration: { maxEntries: 300, maxAgeSeconds: 60 * 60 * 24 * 60 } },
+            options: {
+              cacheName: 'photos',
+              expiration: { maxEntries: 300, maxAgeSeconds: 60 * 60 * 24 * 60 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
           },
         ],
       },

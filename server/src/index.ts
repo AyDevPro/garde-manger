@@ -78,7 +78,22 @@ app.use('/uploads', express.static(config.uploadsDir, { maxAge: '30d', fallthrou
 // ── L'app compilée, servie par le même serveur (même origine, cookie simple) ──
 const here = dirname(fileURLToPath(import.meta.url));
 const webDist = resolve(process.env.WEB_DIST ?? join(here, '..', '..', 'web', 'dist'));
+// Le service worker réémet lui-même les requêtes qu'il intercepte, et c'est sa
+// propre CSP qui s'applique alors — pas l'`img-src` de la page. Avec le
+// `connect-src 'self'` global, toute image d'Open Food Facts échouait dès que le
+// worker était actif : invisible en développement, systématique en production.
+const SW_CSP = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "connect-src 'self' https://images.openfoodfacts.org https://static.openfoodfacts.org",
+  "img-src 'self' data: blob: https://images.openfoodfacts.org https://static.openfoodfacts.org",
+].join('; ');
+
 if (existsSync(webDist)) {
+  app.get('/sw.js', (_req, res, next) => {
+    res.setHeader('Content-Security-Policy', SW_CSP);
+    next();
+  });
   app.use(express.static(webDist, {
     index: false,
     setHeaders(res, path) {
